@@ -1,0 +1,32 @@
+# Xcode user-specific data and build output
+DerivedData/
+build/
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+*.xccheckout
+
+# Swift Package Manager
+.build/
+Packages/
+
+# CocoaPods and Carthage build artifacts
+Pods/
+Carthage/Build/
+
+# Fastlane-generated files
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+
+# Secrets and local configuration
+*.pem
+*.p12
+*.mobileprovision
+GoogleService-Info.plist
+.env
+.env.*
+
+# macOS Finder metadata
+.DS_Store

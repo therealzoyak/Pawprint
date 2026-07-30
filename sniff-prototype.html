@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sniff — interactive prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF0E7;
+  --paper-deep:#E3E8D9;
+  --card:#FCFDFA;
+  --ink:#16241A;
+  --ink-soft:#4C5C4E;
+  --ink-faint:#7F8D7F;
+  --line:#D3DAC7;
+  --moss:#2C4632;
+  --grass:#A8CC3A;
+  --grass-deep:#5F7A16;
+  --ochre:#E0A03A;
+  --ochre-pale:#F7ECD4;
+  --ochre-deep:#7A5410;
+  --clay:#C4643C;
+  --r:14px;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Figtree",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+:focus-visible{outline:2px solid var(--grass-deep);outline-offset:3px;border-radius:4px}
+button{font-family:inherit;font-size:inherit;color:inherit;border:none;background:none;cursor:pointer}
+input{font-family:inherit;font-size:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+
+/* ---------- masthead ---------- */
+.mast{padding:52px 0 30px}
+.mast-row{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:56px;font-weight:600;letter-spacing:-.028em;line-height:.95;font-variation-settings:"SOFT" 60,"WONK" 1}
+.brand em{font-style:normal;color:var(--grass-deep)}
+.tag{font-family:var(--display);font-size:20px;font-weight:300;font-style:italic;color:var(--ink-soft);margin-top:10px;max-width:34ch;line-height:1.35}
+.stamp{border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);white-space:nowrap;background:var(--card)}
+
+/* ---------- scent trail nav ---------- */
+.trail{position:relative;margin:34px 0 40px;padding-top:6px}
+.trail-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.trail-btns{position:relative;display:flex;gap:10px;flex-wrap:wrap}
+.tbtn{
+  background:var(--card);border:1px solid var(--line);border-radius:999px;
+  padding:9px 17px;font-size:13.5px;font-weight:500;color:var(--ink-soft);
+  transition:background .16s,border-color .16s,color .16s;
+}
+.tbtn:hover{border-color:var(--grass-deep);color:var(--ink)}
+.tbtn[aria-current="true"]{background:var(--moss);border-color:var(--moss);color:var(--paper)}
+.tbtn span{font-family:var(--display);font-size:12px;opacity:.55;margin-right:7px;font-weight:600}
+
+/* ---------- stage ---------- */
+.stage{display:grid;grid-template-columns:392px minmax(0,1fr);gap:56px;align-items:start;padding-bottom:80px}
+
+/* ---------- phone ---------- */
+.phone-col{position:sticky;top:28px}
+.phone{
+  width:392px;height:790px;background:var(--moss);border-radius:44px;padding:11px;
+  box-shadow:0 2px 0 rgba(22,36,26,.10),0 22px 44px -20px rgba(22,36,26,.34);
+}
+.glass{
+  width:100%;height:100%;background:var(--card);border-radius:34px;overflow:hidden;
+  display:flex;flex-direction:column;position:relative;
+}
+.status{
+  flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;
+  padding:14px 24px 4px;font-size:12px;font-weight:600;color:var(--ink-faint);letter-spacing:.02em;
+}
+.screen{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;padding:12px 24px 20px}
+.screen::-webkit-scrollbar{width:0}
+.nav{
+  flex:0 0 auto;display:flex;border-top:1px solid var(--line);background:var(--card);
+  padding:9px 10px calc(9px + env(safe-area-inset-bottom));
+}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 0;font-size:10.5px;font-weight:500;color:var(--ink-faint);letter-spacing:.02em}
+.nav button[aria-current="true"]{color:var(--ink)}
+.nav svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- in-app type ---------- */
+.eyebrow{font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+.h-lg{font-family:var(--display);font-size:29px;font-weight:500;letter-spacing:-.02em;line-height:1.14;font-variation-settings:"SOFT" 50,"WONK" 1}
+.h-md{font-family:var(--display);font-size:23px;font-weight:500;letter-spacing:-.015em;line-height:1.2;font-variation-settings:"SOFT" 50}
+.body-sm{font-size:14px;line-height:1.62;color:var(--ink-soft)}
+.body-xs{font-size:12.5px;line-height:1.55;color:var(--ink-faint)}
+
+/* ---------- controls ---------- */
+.btn{
+  display:block;width:100%;text-align:center;background:var(--moss);color:var(--paper);
+  border-radius:12px;padding:15px;font-size:15.5px;font-weight:600;letter-spacing:.01em;
+  transition:transform .1s,opacity .16s;
+}
+.btn:hover{opacity:.9}
+.btn:active{transform:scale(.985)}
+.btn.ghost{background:transparent;color:var(--ink-faint);font-weight:500;font-size:14px;padding:11px}
+.btn.ghost:hover{color:var(--ink)}
+.btn:disabled{opacity:.32;cursor:not-allowed}
+.btn.line{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+
+.chip{
+  border:1px solid var(--line);background:var(--card);border-radius:11px;
+  padding:11px 14px;font-size:14px;font-weight:500;text-align:left;transition:all .14s;
+}
+.chip:hover{border-color:var(--ink-faint)}
+.chip[aria-pressed="true"]{background:var(--moss);border-color:var(--moss);color:var(--paper)}
+.chip.sm{padding:7px 13px;font-size:12.5px;border-radius:999px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.flow{display:flex;flex-wrap:wrap;gap:7px}
+.field{
+  width:100%;border:1px solid var(--line);background:var(--card);border-radius:11px;
+  padding:14px;font-size:16px;font-weight:500;
+}
+.field:focus{outline:none;border-color:var(--grass-deep)}
+.spacer{flex:1 1 auto;min-height:16px}
+
+/* ---------- activity card ---------- */
+.act-art{
+  height:150px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;
+  background:var(--paper-deep);position:relative;overflow:hidden;
+}
+.act-art svg{width:96px;height:96px}
+.mark{stroke:var(--grass-deep);fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.mark-fill{fill:var(--grass-deep);stroke:none}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.pill{
+  font-size:11.5px;font-weight:500;padding:4px 10px;border-radius:999px;
+  background:var(--paper-deep);color:var(--ink-soft);
+}
+.why{
+  background:var(--ochre-pale);border-radius:12px;padding:13px 15px;
+}
+.why .eyebrow{color:var(--ochre-deep)}
+.why p{font-size:13.5px;line-height:1.58;color:var(--ochre-deep);margin-top:5px}
+.step{display:flex;gap:12px;align-items:flex-start}
+.step-n{
+  flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--paper-deep);
+  font-size:11.5px;font-weight:600;display:flex;align-items:center;justify-content:center;
+  color:var(--ink-soft);margin-top:1px;
+}
+.step p{font-size:14px;line-height:1.55}
+.safety{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;line-height:1.5;color:var(--clay)}
+.safety svg{flex:0 0 auto;width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;margin-top:3px}
+
+/* ---------- pet header ---------- */
+.pet-row{display:flex;align-items:center;gap:10px}
+.avatar{
+  width:34px;height:34px;border-radius:50%;background:var(--grass);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--display);font-size:16px;font-weight:600;color:var(--moss);
+}
+
+/* ---------- memory scrapbook ---------- */
+.book{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.snap{
+  aspect-ratio:1;border-radius:9px;padding:9px;display:flex;flex-direction:column;
+  justify-content:space-between;background:var(--paper-deep);
+}
+.snap svg{width:26px;height:26px}
+.snap .d{font-size:10px;font-weight:600;color:var(--ink-soft);letter-spacing:.02em}
+.snap.photo{background:var(--grass);}
+.snap.photo .d{color:var(--moss)}
+.snap.photo .mark{stroke:var(--moss)}
+.snap.photo .mark-fill{fill:var(--moss)}
+.stat-row{display:flex;gap:9px}
+.stat{flex:1;background:var(--paper-deep);border-radius:11px;padding:11px 13px}
+.stat b{display:block;font-family:var(--display);font-size:25px;font-weight:600;line-height:1.1;letter-spacing:-.02em}
+.stat span{font-size:11px;color:var(--ink-faint);font-weight:500}
+.note{
+  border-left:2px solid var(--grass);padding-left:12px;font-size:12.5px;
+  line-height:1.55;color:var(--ink-faint);
+}
+
+/* ---------- library rows ---------- */
+.row{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.row:last-child{border-bottom:none}
+.row-art{flex:0 0 auto;width:46px;height:46px;border-radius:10px;background:var(--paper-deep);display:flex;align-items:center;justify-content:center}
+.row-art svg{width:26px;height:26px}
+.row-b{min-width:0;flex:1}
+.row-b p{font-size:14.5px;font-weight:500;line-height:1.3}
+.row-b span{font-size:11.5px;color:var(--ink-faint)}
+.heart{flex:0 0 auto;width:17px;height:17px;stroke:var(--ink-faint);fill:none;stroke-width:1.7}
+.heart.on{stroke:var(--clay);fill:var(--clay)}
+
+/* ---------- reaction ---------- */
+.react{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.react button{
+  border:1px solid var(--line);border-radius:12px;padding:15px 10px;background:var(--card);
+  font-size:13.5px;font-weight:500;transition:all .14s;
+}
+.react button:hover{border-color:var(--ink-faint)}
+.photo-slot{
+  height:118px;border:1px dashed var(--line);border-radius:12px;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;
+  color:var(--ink-faint);font-size:13px;font-weight:500;transition:all .14s;
+}
+.photo-slot:hover{border-color:var(--grass-deep);color:var(--ink-soft)}
+.photo-slot.filled{background:var(--grass);border:none;color:var(--moss)}
+.photo-slot svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6}
+
+/* ---------- annotation panel ---------- */
+.panel{padding-top:6px}
+.panel-kicker{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+.panel h2{font-family:var(--display);font-size:36px;font-weight:500;letter-spacing:-.024em;line-height:1.1;margin:12px 0 16px;font-variation-settings:"SOFT" 50,"WONK" 1}
+.panel .lede{font-size:17px;line-height:1.6;color:var(--ink-soft);max-width:56ch}
+.panel h3{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;margin:34px 0 14px}
+.pnotes{list-style:none;max-width:58ch}
+.pnotes li{position:relative;padding-left:26px;margin-bottom:13px;font-size:15px;line-height:1.62;color:var(--ink-soft)}
+.pnotes li::before{
+  content:"";position:absolute;left:4px;top:10px;width:7px;height:7px;
+  border-radius:50%;background:var(--grass);
+}
+.pnotes li b{font-weight:600;color:var(--ink)}
+.callout{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:20px 22px;margin-top:32px;max-width:58ch;
+}
+.callout p{font-family:var(--display);font-size:18px;font-weight:300;font-style:italic;line-height:1.5;color:var(--ink)}
+.callout cite{display:block;margin-top:10px;font-family:var(--body);font-style:normal;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+.reset{margin-top:38px}
+.reset button{border:1px solid var(--line);border-radius:999px;padding:9px 18px;font-size:13px;font-weight:500;color:var(--ink-soft);background:var(--card)}
+.reset button:hover{border-color:var(--ink-faint);color:var(--ink)}
+
+@media (max-width:980px){
+  .stage{grid-template-columns:1fr;gap:44px}
+  .phone-col{position:static;display:flex;justify-content:center}
+  .brand{font-size:44px}
+  .panel h2{font-size:29px}
+}
+@media (max-width:440px){
+  .wrap{padding:0 16px}
+  .phone{width:100%;max-width:392px;height:740px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="mast-row">
+      <div>
+        <div class="brand">Sni<em>ff</em></div>
+        <p class="tag">One tiny enrichment activity a day, for your dog or cat.</p>
+      </div>
+      <div class="stamp">Interactive prototype</div>
+    </div>
+
+    <nav class="trail" aria-label="Walkthrough sections">
+      <svg class="trail-svg" viewBox="0 0 900 60" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M10 46 C 130 12, 230 62, 350 34 S 590 8, 700 44 S 860 26, 895 34"
+              fill="none" stroke="#C3CDB2" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="1 9"/>
+      </svg>
+      <div class="trail-btns" id="trail"></div>
+    </nav>
+  </header>
+
+  <div class="stage">
+
+    <div class="phone-col">
+      <div class="phone">
+        <div class="glass">
+          <div class="status">
+            <span>9:41</span>
+            <span id="statusRight">Sniff</span>
+          </div>
+          <div class="screen" id="screen"></div>
+          <div class="nav" id="navbar" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-kicker" id="pKicker">Screen</div>
+      <h2 id="pTitle">Loading</h2>
+      <p class="lede" id="pLede"></p>
+      <h3>Notes for the build</h3>
+      <ul class="pnotes" id="pNotes"></ul>
+      <div class="callout" id="pQuote" hidden>
+        <p id="pQuoteText"></p>
+        <cite id="pQuoteCite"></cite>
+      </div>
+      <div class="reset">
+        <button onclick="hardReset()">Restart the walkthrough</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ============ category marks ============ */
+const MARKS = {
+  foraging:'<circle cx="16" cy="30" r="2.6" class="mark-fill"/><circle cx="30" cy="20" r="2.6" class="mark-fill"/><circle cx="45" cy="33" r="2.6" class="mark-fill"/><circle cx="34" cy="44" r="2.6" class="mark-fill"/><path d="M8 52 C 20 44, 24 32, 34 26 S 52 20, 56 10" class="mark"/>',
+  cognitive:'<rect x="10" y="10" width="14" height="14" rx="2.5" class="mark"/><rect x="26" y="10" width="14" height="14" rx="2.5" class="mark"/><rect x="42" y="10" width="14" height="14" rx="2.5" class="mark"/><rect x="10" y="26" width="14" height="14" rx="2.5" class="mark"/><rect x="26" y="26" width="14" height="14" rx="2.5" class="mark-fill"/><rect x="42" y="26" width="14" height="14" rx="2.5" class="mark"/><rect x="10" y="42" width="14" height="14" rx="2.5" class="mark"/><rect x="26" y="42" width="14" height="14" rx="2.5" class="mark"/><rect x="42" y="42" width="14" height="14" rx="2.5" class="mark"/>',
+  sensory:'<circle cx="33" cy="33" r="3.4" class="mark-fill"/><path d="M33 21 A 12 12 0 0 1 33 45" class="mark"/><path d="M33 13 A 20 20 0 0 1 33 53" class="mark"/><path d="M33 5 A 28 28 0 0 1 33 61" class="mark"/>',
+  physical:'<path d="M8 42 L 20 22 L 30 38 L 42 16 L 52 34 L 60 24" class="mark"/><circle cx="20" cy="22" r="3" class="mark-fill"/><circle cx="42" cy="16" r="3" class="mark-fill"/>',
+  passive:'<path d="M14 40 A 20 20 0 0 1 54 40" class="mark"/><path d="M22 48 A 12 12 0 0 1 46 48" class="mark"/><path d="M8 56 L 60 56" class="mark"/>',
+  social:'<circle cx="25" cy="33" r="15" class="mark"/><circle cx="43" cy="33" r="15" class="mark"/><circle cx="34" cy="33" r="3.2" class="mark-fill"/>'
+};
+const CATNAME = {foraging:'Foraging',cognitive:'Cognitive',sensory:'Sensory',physical:'Physical',passive:'Calming',social:'Social'};
+function mark(cat,cls){return '<svg viewBox="0 0 66 66" aria-hidden="true" class="'+(cls||'')+'">'+MARKS[cat]+'</svg>';}
+
+/* ============ content library ============ */
+const LIB = [
+  /* ---- dog ---- */
+  {id:'d1',sp:'dog',t:'Towel burrito',cat:'foraging',tier:1,min:3,mat:['A hand towel','Her kibble'],
+   desc:'A rolled-up towel hides her dinner. She unrolls it with her nose.',
+   why:'Unrolling and sniffing satisfies the scavenging instinct that a food bowl skips entirely. Nose work is genuinely tiring — a few minutes of it does more than a longer walk.',
+   steps:['Lay a hand towel flat on the floor.','Scatter a handful of kibble across it.','Roll the towel up loosely, like a burrito.','Hand it over and let her work it out.'],
+   safe:'Stay in the room — some dogs try to eat fabric.'},
+  {id:'d2',sp:'dog',t:'Scatter feed',cat:'foraging',tier:1,min:2,mat:['Her kibble'],
+   desc:'Instead of a bowl, throw the meal across the grass or a rug.',
+   why:'Turns a ten-second meal into five minutes of foraging. The easiest possible entry point — it costs you nothing and changes nothing except the container.',
+   steps:['Take her usual portion of kibble.','Toss it in a wide arc across grass or a textured rug.','Let her find every piece at her own pace.'],
+   safe:null},
+  {id:'d3',sp:'dog',t:'Three cups',cat:'cognitive',tier:1,min:4,mat:['3 cups or bowls','A few treats'],
+   desc:'Classic shell game. She has to work out which cup is hiding the treat.',
+   why:'Problem-solving with an obvious payoff. Builds confidence quickly because the success rate is high, which matters more than difficulty early on.',
+   steps:['Line up three cups upside down while she watches.','Put a treat under one of them.','Let her go find it.','Once she gets it, shuffle the cups before releasing her.'],
+   safe:null},
+  {id:'d4',sp:'dog',t:'Muffin tin puzzle',cat:'cognitive',tier:2,min:5,mat:['Muffin tin','Tennis balls or rolled socks','Treats'],
+   desc:'Treats in the cups, balls on top. She has to move the balls to get the food.',
+   why:'Two problems stacked: find which cups have food, then figure out how to move the cover. A genuine step up from the three-cup game.',
+   steps:['Drop a treat into a few of the muffin cups — not all of them.','Cover every cup with a tennis ball or a rolled sock.','Set it on the floor and step back.','Let her nose or paw the balls out.'],
+   safe:'Use balls too big to swallow, and take the tin away when she is done.'},
+  {id:'d5',sp:'dog',t:'Toilet roll parcels',cat:'foraging',tier:2,min:3,mat:['Cardboard tubes','Her kibble'],
+   desc:'Kibble inside a tube with the ends folded shut. She has to open it.',
+   why:'Licensed destruction. Shredding is a natural behaviour, and giving her something she is allowed to tear apart takes the pressure off your furniture.',
+   steps:['Drop a few pieces of kibble into an empty cardboard tube.','Fold both ends closed.','Make two or three of these and scatter them.','Let her shred. Pick up the pieces afterwards.'],
+   safe:'Supervise closely and remove cardboard she tries to swallow.'},
+  {id:'d6',sp:'dog',t:'Find it',cat:'cognitive',tier:2,min:5,mat:['A few treats'],
+   desc:'Hide treats around one room and send her looking.',
+   why:'A searching game she can play anywhere for the rest of her life. It also gives you a useful cue for redirecting her attention when you need it.',
+   steps:['Say "find it" and toss a treat where she can see it land.','Praise when she gets it. Repeat until she knows the phrase.','Now hide one while she is not watching.','Send her with "find it" and let her use her nose.'],
+   safe:null},
+  {id:'d7',sp:'dog',t:'Frozen lick mat',cat:'passive',tier:1,min:3,mat:['Lick mat or a flat plate','Plain yoghurt or peanut butter'],
+   desc:'Spread, freeze, hand over. Slow licking settles a wound-up dog.',
+   why:'Licking is a self-soothing behaviour — it lowers arousal rather than raising it. This is the one to reach for after a stimulating day, or before you need her to settle.',
+   steps:['Spread a thin layer of plain yoghurt or peanut butter across a lick mat.','Freeze for at least an hour.','Give it to her somewhere she likes to lie down.','Let her work at it until it is clean.'],
+   safe:'Check the peanut butter has no xylitol — it is toxic to dogs.'},
+  {id:'d8',sp:'dog',t:'Sniff-led walk',cat:'sensory',tier:1,min:15,mat:['Her lead'],
+   desc:'Same walk, except she picks where you stop and for how long.',
+   why:'A normal walk is your route at your pace. Letting her lead turns it into an information-gathering exercise, which is what her nose is actually for.',
+   steps:['Head out on a familiar route with a loose lead.','When she stops to sniff, stop with her.','Wait until she is finished. Do not hurry her along.','Cover less ground than usual. That is the point.'],
+   safe:null},
+  {id:'d9',sp:'dog',t:'Box tunnel',cat:'physical',tier:3,min:10,mat:['Cardboard boxes','A few treats'],
+   desc:'Build a short tunnel or obstacle run out of boxes and chairs.',
+   why:'Novel physical shapes ask her to think about where her body is — useful coordination work, and a good rainy-day substitute for a long walk.',
+   steps:['Open both ends of two or three boxes and line them up.','Add a chair to duck under or a cushion to step over.','Toss a treat through and encourage her to follow it.','Rearrange the layout and go again.'],
+   safe:'Keep the run low and flat. Skip it for senior dogs or any joint issues.'},
+  {id:'d10',sp:'dog',t:'Spin both ways',cat:'physical',tier:2,min:3,mat:['A few treats'],
+   desc:'Teach a spin clockwise, then an anticlockwise twist.',
+   why:'Curving the spine both directions is quietly good for long-term mobility. Works at any age — a senior dog spinning slowly gets the same benefit.',
+   steps:['Hold a treat at her nose and lead it in a slow circle.','Mark and reward the moment she completes the turn.','Name it "spin". Practise three or four times.','Now teach the other direction and call it "twist".'],
+   safe:null},
+  {id:'d11',sp:'dog',t:'Herb patch',cat:'sensory',tier:2,min:5,mat:['Dried rosemary, lavender or mint'],
+   desc:'Rub safe herbs onto rocks or furniture legs and let her investigate.',
+   why:'New smells in a familiar place. Her environment stops being fully mapped, which is more interesting to a dog than almost anything you can buy.',
+   steps:['Take a pinch of dried rosemary, lavender or mint.','Rub it onto two or three surfaces at nose height.','Bring her in and say nothing.','Let her find them in her own time.'],
+   safe:'Use dried culinary herbs only. Essential oils are not safe for this.'},
+
+  /* ---- cat ---- */
+  {id:'c1',sp:'cat',t:'Bandana roll',cat:'foraging',tier:1,min:3,mat:['A cloth or bandana','Treats or kibble'],
+   desc:'Treats rolled up in a cloth. He has to work the fabric open.',
+   why:'Cats forage too — the instinct is just quieter than a dog\'s. Rolling food into fabric turns eating into a short problem worth solving.',
+   steps:['Lay a bandana or tea towel flat.','Scatter treats or kibble down the middle.','Roll it up loosely and set it down where he can see.','Let him paw and nose it open.'],
+   safe:null},
+  {id:'c2',sp:'cat',t:'Paper bag hideout',cat:'passive',tier:1,min:2,mat:['A paper grocery bag'],
+   desc:'Open a paper bag on its side and leave it somewhere quiet.',
+   why:'Even a cat who never uses it benefits from knowing a hiding place exists. Available cover lowers baseline stress, which is why shelters use it as standard practice.',
+   steps:['Take the handles off a paper grocery bag.','Open it out and lay it on its side.','Put it somewhere quiet with a clear view of the room.','Walk away and leave it alone.'],
+   safe:'Paper only — plastic bags and handles are a strangulation risk.'},
+  {id:'c3',sp:'cat',t:'Bathtub ping pong',cat:'physical',tier:1,min:5,mat:['2–3 ping pong balls'],
+   desc:'Drop a few balls in an empty bathtub. The walls keep the game going.',
+   why:'The curved sides send the balls back, so the toy chases him as much as he chases it. Sustained movement without you having to be involved.',
+   steps:['Make sure the tub is dry.','Drop in two or three ping pong balls.','Let him in and stay nearby to watch.','Leave the balls in for later if he likes it.'],
+   safe:null},
+  {id:'c4',sp:'cat',t:'Five station hunt',cat:'foraging',tier:2,min:5,mat:['His kibble','5 small saucers or lids'],
+   desc:'Split his meal across five spots around the house instead of one bowl.',
+   why:'Cats are built to hunt several small meals a day, not eat one large one from a fixed location. Spreading the food out is closer to how they are wired to eat.',
+   steps:['Divide his usual portion into five small piles.','Place them in five different spots — some raised, some low.','Vary the locations day to day.','Let him find them across the evening.'],
+   safe:'Skip in multi-cat homes where food guarding is an issue.'},
+  {id:'c5',sp:'cat',t:'Tube wheel',cat:'physical',tier:2,min:5,mat:['A cardboard tube','Scissors'],
+   desc:'Cut a fringe into both ends of a tube so it rolls unpredictably.',
+   why:'The fringed ends make it wobble and change direction, which reads as prey behaviour. Unpredictable movement holds a cat\'s attention far longer than a steady roll.',
+   steps:['Cut a shallow fringe around both ends of a cardboard tube.','Fold the fringe back so it forms two small wheels.','Roll it across a hard floor.','Drop a treat inside to raise the stakes.'],
+   safe:null},
+  {id:'c6',sp:'cat',t:'Full hunt sequence',cat:'physical',tier:2,min:6,mat:['A wand toy','One treat'],
+   desc:'Stalk, chase, pounce, then a treat to finish the cycle properly.',
+   why:'A hunt that never ends in a catch leaves a cat wound up rather than satisfied. Finishing with a treat completes the sequence and is why this settles him afterwards.',
+   steps:['Drag the wand toy along the floor, away from him — never toward him.','Let him stalk it. Pause so he can plan.','Let him catch it properly at least twice.','Finish by giving him a treat, then put the toy away.'],
+   safe:'Put wand toys away between sessions — the string is a swallowing risk.'},
+  {id:'c7',sp:'cat',t:'Box castle',cat:'cognitive',tier:3,min:15,mat:['Several cardboard boxes','Scissors'],
+   desc:'Build a small structure with tunnels, doorways and a lookout.',
+   why:'Cats read a room in three dimensions. Adding height and hiding places changes the whole map of a space he thought he had memorised.',
+   steps:['Gather three or four boxes of different sizes.','Cut doorways so they connect into a run.','Stack one on top to make a lookout.','Leave it alone and let him discover it.'],
+   safe:'Remove staples and tape. Make sure the stack cannot topple.'},
+  {id:'c8',sp:'cat',t:'Window session',cat:'sensory',tier:1,min:10,mat:['A window'],
+   desc:'Clear a sill, sit with him, and let him watch the outside for ten minutes.',
+   why:'Watching birds and movement is real sensory work, not idleness. Doing it alongside him also counts as social enrichment, which indoor cats get less of than owners assume.',
+   steps:['Clear a sill or pull a chair to a window.','Sit with him without talking or handling him.','Let him watch for as long as he wants.','Repeat at the same time of day so he starts expecting it.'],
+   safe:null},
+  {id:'c9',sp:'cat',t:'Scent cloth',cat:'sensory',tier:2,min:3,mat:['A clean cloth'],
+   desc:'Bring an outside smell indoors on a cloth and leave it out.',
+   why:'An indoor cat\'s scent world barely changes. One unfamiliar smell is a genuine event, and a low-effort way to make a familiar room interesting again.',
+   steps:['Rub a clean cloth on a fence post, tree or doorstep outside.','Bring it in and leave it on the floor.','Say nothing and let him find it.','Swap it for a fresh one in a few days.'],
+   safe:'Avoid anywhere unknown animals may have been if he is unvaccinated.'}
+];
+
+/* ============ state ============ */
+const SEED = [
+  {id:'s1',cat:'foraging',d:'Nov 18',photo:true},{id:'s2',cat:'passive',d:'Nov 17',photo:true},
+  {id:'s3',cat:'cognitive',d:'Nov 16',photo:false},{id:'s4',cat:'sensory',d:'Nov 14',photo:true},
+  {id:'s5',cat:'foraging',d:'Nov 13',photo:true},{id:'s6',cat:'physical',d:'Nov 12',photo:false},
+  {id:'s7',cat:'foraging',d:'Nov 11',photo:true},{id:'s8',cat:'passive',d:'Nov 10',photo:true},
+  {id:'s9',cat:'sensory',d:'Nov 9',photo:false}
+];
+let S = {};
+function hardReset(){
+  S = {screen:'welcome',sp:null,name:'',age:null,size:null,energy:null,
+       limits:[],mats:[],act:null,swaps:0,sessions:SEED.slice(),
+       done:null,photo:false,reaction:null,favs:['d1','d4'],filter:'all'};
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ============ selection logic ============ */
+function pool(){
+  const sp = S.sp || 'dog';
+  return LIB.filter(a=>a.sp===sp);
+}
+function pick(){
+  const p = pool();
+  const recent = S.sessions.slice(0,3).map(x=>x.id);
+  const ok = p.filter(a=>!recent.includes(a.id) && a.tier<=(S.energy==='high'?3:2));
+  const list = ok.length?ok:p;
+  return list[S.swaps % list.length];
+}
+function petName(){return S.name.trim() || (S.sp==='cat'?'Milo':'Luna');}
+function initial(){return petName().charAt(0).toUpperCase();}
+
+/* ============ walkthrough nav ============ */
+const TRAIL = [
+  {k:'ob',n:'01',l:'Onboarding',s:'welcome'},
+  {k:'today',n:'02',l:'Today',s:'today'},
+  {k:'detail',n:'03',l:'The activity',s:'detail'},
+  {k:'done',n:'04',l:'Finishing',s:'done'},
+  {k:'memory',n:'05',l:'Memory',s:'memory'},
+  {k:'library',n:'06',l:'Library',s:'library'}
+];
+function trailKey(){
+  if(['welcome','ob1','ob2','ob3','ob4'].includes(S.screen))return 'ob';
+  if(S.screen==='detail')return 'detail';
+  if(S.screen==='done'||S.screen==='reacted')return 'done';
+  if(S.screen==='memory')return 'memory';
+  if(S.screen==='library')return 'library';
+  return 'today';
+}
+function jump(t){
+  if(t.s!=='welcome' && !S.sp){S.sp='dog';S.name='Luna';S.energy='medium';S.mats=['Kibble','Towels','Cardboard','Treats'];}
+  if(t.s==='detail'||t.s==='done'){S.act=S.act||pick();}
+  S.screen=t.s;render();
+}
+
+/* ============ panel copy ============ */
+const PANEL = {
+  welcome:{k:'Screen 01 — entry',t:'The promise, stated in one line',
+    l:'The first screen has one job: tell someone who has abandoned three habit apps that this one is different. It does that by naming the thing they are afraid of — streaks — and ruling it out immediately.',
+    n:['<b>Anti-positioning up front.</b> Users arrive assuming this works like Duolingo. Say otherwise before they can assume it.',
+       '<b>No account wall.</b> Onboarding runs before sign-in. Ask for an email only when there is something worth saving.',
+       '<b>Species choice is the first real fork.</b> It splits the entire content library, so it comes before anything else.'],
+    q:['Enrichment is not a dog babysitter. If you use it to get away from your dog, you are missing the point.','Paraphrased — canine enrichment educators, on the most common owner misconception']},
+  ob1:{k:'Screen 01 — onboarding',t:'Dog or cat, and nothing else yet',
+    l:'One question per screen. Every question has to earn its place by changing what gets recommended — if an answer does not alter the output, cut the question.',
+    n:['<b>Cat is not an afterthought.</b> The cat library is written by a feline behaviour consultant, not translated from the dog one. Cat enrichment follows the hunt sequence and leans on scent and environment.',
+       '<b>Cat is also the marketing wedge.</b> Dog is the bigger market; cat is the emptier one. Content and paid acquisition should lead with cats.',
+       '<b>Target: under three minutes end to end.</b> Six screens maximum.']},
+  ob2:{k:'Screen 02 — onboarding',t:'Who the pet actually is',
+    l:'Name, age band and size band. The name matters more than it looks — every notification from here on says "Today for Luna", not "Today\'s activity", and that difference shows up in open rates.',
+    n:['<b>Bands, not exact figures.</b> Nobody wants to type a birth date. Bands are enough to filter age-inappropriate activities.',
+       '<b>Size gates real things.</b> Box tunnels and certain puzzle feeders are not suitable at both ends of the size range.',
+       '<b>Multi-pet households get separate profiles</b> — but the daily card still shows one pet at a time. Two activities at once breaks the core promise.']},
+  ob3:{k:'Screen 03 — onboarding',t:'Energy, and the things to avoid',
+    l:'Energy level sets the ceiling on intensity. The limitations list is the safety-critical field in the entire product — it is the difference between a good recommendation and an injured animal.',
+    n:['<b>Limitations are hard filters, never soft weights.</b> A mobility-limited dog must never be shown a box tunnel, regardless of how well it scores otherwise.',
+       '<b>Start everyone at tier one anyway.</b> Even a high-energy dog gets the easiest activities for the first week. Earning trust beats matching capability.',
+       '<b>Behaviour problems get their own path.</b> An optional branch here — chewing, barking, night activity, litter box issues — biases early recommendations and routes serious cases toward a professional.']},
+  ob4:{k:'Screen 04 — onboarding',t:'What is already in the house',
+    l:'This is the screen that makes the product work. Recommending a snuffle mat to someone who does not own one produces guilt, not enrichment. Everything suggested has to be doable in the next ten minutes.',
+    n:['<b>The default activity never requires a purchase.</b> Towels, boxes, cups, muffin tins, cardboard tubes, and the food the pet already eats.',
+       '<b>Purchasable tools are optional upgrades</b>, surfaced only once someone is consistently doing the free versions.',
+       '<b>Re-ask this occasionally.</b> Households acquire lick mats. A quiet prompt every few months keeps the filter accurate.']},
+  today:{k:'Screen 05 — the core loop',t:'One activity. That is the whole screen.',
+    l:'Everything the product believes is visible here. One thing, chosen for you, small enough to say yes to. The only decision left is whether to do it — and if the answer is no, swapping is free.',
+    n:['<b>No streak counter anywhere.</b> Not a chain, not a percentage, not a red anything. This is the single most important differentiator and it has to be visible, not just true in the database.',
+       '<b>Swapping is a success, not a defection.</b> Let people cycle three or four times without friction. Someone who swaps until they find something they will actually do has been served well.',
+       '<b>Materials are on the card, not buried.</b> "3 min · needs a towel" is enough for the decision. The detail screen is for after they have already said yes.',
+       '<b>Skips are signal.</b> A mild down-weight, never a suppression, and never anything the user is told off about.']},
+  detail:{k:'Screen 06 — the core loop',t:'Steps, and why any of this matters',
+    l:'Four steps, written for someone holding a phone in one hand. Then the part almost nobody else publishes: which instinct this satisfies and why it works.',
+    n:['<b>"Why this works" is the retention feature.</b> Owners who understand the mechanism keep going. Owners following instructions stop after a fortnight.',
+       '<b>Steps are imperative and single-action.</b> One thing per line, no compound instructions, no paragraph anyone has to parse while a dog is jumping on them.',
+       '<b>Safety notes are structured data, not prose.</b> Supervision requirements, choking risks, xylitol, resource-guarding contraindications — a field on the record, surfaced automatically.',
+       '<b>Illustration over video for v1.</b> Cheaper at volume, no streaming cost, and a consistent mark system becomes brand equity rather than looking like stock footage.']},
+  done:{k:'Screen 07 — the core loop',t:'A photo, a reaction, and out',
+    l:'The completion screen does two jobs: capture the emotional payoff, and collect the only feedback signal the recommendation engine needs. Both in under fifteen seconds.',
+    n:['<b>The photo is the retention mechanic.</b> Not the counter. Over months it becomes a record of you and your animal that nobody wants to abandon — which is why it sits behind the paywall.',
+       '<b>Four reactions, no free text required.</b> Loved it boosts the category and unlocks the next tier. Too hard drops a tier. Not interested suppresses permanently.',
+       '<b>Do not over-celebrate.</b> No confetti, no fanfare. Warm and brief. Over-celebrating a three-minute activity is condescending and it wears out fast.',
+       '<b>Rest is part of the programme.</b> After a high-arousal activity, tomorrow biases toward something calming. The product should model good practice, not just maximise engagement.']},
+  memory:{k:'Screen 08 — looking back',t:'A scrapbook, not a dashboard',
+    l:'Cumulative counts only. Forty-two activities this year, never eleven days in a row. The gaps in the grid are not marked as failures because they are not failures.',
+    n:['<b>Track cumulative internally too.</b> If the team measures streaks in the analytics, streaks will end up in the product within a year. Do not start.',
+       '<b>Say the anti-streak position out loud.</b> Users burned by other apps assume every tracker punishes them. Telling them plainly is worth the pixels.',
+       '<b>Monthly recaps are the organic acquisition channel.</b> A shareable card of your pet\'s month costs nothing to generate and gets posted.',
+       '<b>Most loved is derived from reactions</b>, and doubles as a re-engagement surface on a low-energy day.']},
+  library:{k:'Screen 09 — the escape hatch',t:'For when today\'s card does not fit',
+    l:'It is raining, the pet is off-colour, there are guests, there are four minutes before work. The library exists so that the daily card being wrong does not mean the day is lost.',
+    n:['<b>Filter by time and materials first.</b> Category filtering is secondary — nobody opens this thinking "I want cognitive". They think "I have five minutes and a cardboard box".',
+       '<b>Saved favourites surface at the top</b> and are exempt from the ten-day repeat rule. A pet that loves one game should get to play it.',
+       '<b>Full library access is the main paid unlock</b>, alongside multiple pets and the photo memory grid.',
+       '<b>Launch with 200 activities</b>, roughly 120 dog and 80 cat. Enough for six months without meaningful repetition. Scale content spend to observed retention, not to ambition.']}
+};
+
+/* ============ render ============ */
+function render(){
+  const scr = document.getElementById('screen');
+  const nav = document.getElementById('navbar');
+  const showNav = ['today','detail','done','reacted','memory','library'].includes(S.screen);
+  nav.hidden = !showNav;
+  if(showNav) nav.innerHTML = navHTML();
+  document.getElementById('statusRight').textContent = showNav ? petName() : 'Sniff';
+  scr.innerHTML = SCREENS[S.screen]();
+  scr.scrollTop = 0;
+  renderTrail();
+  renderPanel();
+}
+function renderTrail(){
+  const cur = trailKey();
+  document.getElementById('trail').innerHTML = TRAIL.map((t,i)=>
+    '<button class="tbtn" aria-current="'+(t.k===cur)+'" onclick="jump(TRAIL['+i+'])"><span>'+t.n+'</span>'+t.l+'</button>'
+  ).join('');
+}
+function renderPanel(){
+  const key = ['welcome','ob1','ob2','ob3','ob4','today','detail','done','memory','library'].includes(S.screen)?S.screen:(S.screen==='reacted'?'done':'today');
+  const p = PANEL[key];
+  document.getElementById('pKicker').textContent = p.k;
+  document.getElementById('pTitle').textContent = p.t;
+  document.getElementById('pLede').textContent = p.l;
+  document.getElementById('pNotes').innerHTML = p.n.map(x=>'<li>'+x+'</li>').join('');
+  const q = document.getElementById('pQuote');
+  if(p.q){q.hidden=false;document.getElementById('pQuoteText').textContent=p.q[0];document.getElementById('pQuoteCite').textContent=p.q[1];}
+  else q.hidden=true;
+}
+function navHTML(){
+  const items=[
+    ['today','Today','<path d="M4 6h16M4 12h16M4 18h9"/>'],
+    ['library','Library','<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'],
+    ['memory',petName(),'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M3 16l5-4 4 3 3-2 6 5"/>']
+  ];
+  const cur = S.screen==='detail'||S.screen==='done'||S.screen==='reacted'?'today':S.screen;
+  return items.map(([k,l,d])=>
+    '<button aria-current="'+(k===cur)+'" onclick="go(\''+k+'\')"><svg viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>'+l+'</button>'
+  ).join('');
+}
+
+/* ============ actions ============ */
+function go(s){S.screen=s;render();}
+function setSp(v){S.sp=v;S.name='';S.screen='ob2';render();}
+function setName(v){S.name=v;}
+function setVal(k,v){S[k]=v;render();}
+function toggle(k,v){
+  const a=S[k];const i=a.indexOf(v);
+  if(i>-1)a.splice(i,1);else a.push(v);
+  render();
+}
+function startDay(){S.act=pick();S.screen='today';render();}
+function swap(){S.swaps++;S.act=pick();render();}
+function openAct(id){if(id){S.act=LIB.find(a=>a.id===id);}S.screen='detail';render();}
+function finish(){S.photo=false;S.reaction=null;S.screen='done';render();}
+function snap(){S.photo=!S.photo;render();}
+function react(r){
+  S.reaction=r;
+  S.sessions.unshift({id:S.act.id,cat:S.act.cat,d:'Nov 19',photo:S.photo});
+  S.screen='reacted';render();
+}
+function fav(id,e){
+  e.stopPropagation();
+  const i=S.favs.indexOf(id);
+  if(i>-1)S.favs.splice(i,1);else S.favs.push(id);
+  render();
+}
+function setFilter(f){S.filter=f;render();}
+
+/* ============ screens ============ */
+const SCREENS = {
+
+welcome:()=>`
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:24px;padding:20px 0">
+    <div class="act-art" style="height:180px;background:var(--moss)">
+      <svg viewBox="0 0 66 66" aria-hidden="true" style="width:110px;height:110px">
+        <g style="stroke:var(--grass);fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round">
+          <path d="M8 54 C 20 46, 24 32, 34 26 S 52 20, 58 8"/>
+        </g>
+        <g style="fill:var(--grass)">
+          <circle cx="16" cy="32" r="2.8"/><circle cx="31" cy="21" r="2.8"/>
+          <circle cx="46" cy="34" r="2.8"/><circle cx="35" cy="45" r="2.8"/>
+        </g>
+      </svg>
+    </div>
+    <div>
+      <h1 class="h-lg">One small thing a day for your animal.</h1>
+      <p class="body-sm" style="margin-top:12px">Three minutes. Things you already own. No streaks to break and nothing to catch up on.</p>
+    </div>
+    <div class="spacer"></div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <button class="btn" onclick="go('ob1')">Get started</button>
+      <button class="btn ghost" onclick="go('ob1')">I already have an account</button>
+    </div>
+  </div>`,
+
+ob1:()=>`
+  <div style="padding-top:26px">
+    <p class="eyebrow">Step 1 of 4</p>
+    <h2 class="h-md" style="margin-top:10px">Who are we doing this for?</h2>
+  </div>
+  <div style="margin-top:28px;display:flex;flex-direction:column;gap:11px">
+    ${['dog','cat'].map(sp=>`
+      <button class="chip" style="padding:20px;display:flex;align-items:center;gap:16px" onclick="setSp('${sp}')">
+        <span style="width:52px;height:52px;border-radius:14px;background:var(--paper-deep);display:flex;align-items:center;justify-content:center">
+          ${mark(sp==='dog'?'foraging':'sensory')}
+        </span>
+        <span>
+          <span style="display:block;font-size:17px;font-weight:600;text-transform:capitalize">${sp}</span>
+          <span style="display:block;font-size:12.5px;color:var(--ink-faint);font-weight:400;margin-top:2px">
+            ${sp==='dog'?'Foraging, scent work, problem solving':'Hunting sequences, scent, vertical space'}
+          </span>
+        </span>
+      </button>`).join('')}
+  </div>
+  <div class="spacer"></div>
+  <p class="note">Cat activities are written separately by a feline behaviour consultant — they follow the hunt sequence, not a shrunken dog routine.</p>`,
+
+ob2:()=>`
+  <div style="padding-top:26px">
+    <p class="eyebrow">Step 2 of 4</p>
+    <h2 class="h-md" style="margin-top:10px">Tell us about your ${S.sp}.</h2>
+  </div>
+  <div style="margin-top:24px;display:flex;flex-direction:column;gap:20px">
+    <div>
+      <p class="eyebrow" style="margin-bottom:8px">Name</p>
+      <input class="field" id="nm" value="${S.name}" placeholder="${S.sp==='cat'?'Milo':'Luna'}" oninput="setName(this.value)" aria-label="Pet name">
+    </div>
+    <div>
+      <p class="eyebrow" style="margin-bottom:8px">Age</p>
+      <div class="grid2">
+        ${['Under 1','1–7','8–11','12+'].map(a=>
+          `<button class="chip" aria-pressed="${S.age===a}" onclick="setVal('age','${a}')">${a}</button>`).join('')}
+      </div>
+    </div>
+    <div>
+      <p class="eyebrow" style="margin-bottom:8px">Size</p>
+      <div class="grid2">
+        ${['Small','Medium','Large','Extra large'].map(a=>
+          `<button class="chip" aria-pressed="${S.size===a}" onclick="setVal('size','${a}')">${a}</button>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn" style="margin-top:20px" onclick="go('ob3')" ${!S.age||!S.size?'disabled':''}>Continue</button>`,
+
+ob3:()=>`
+  <div style="padding-top:26px">
+    <p class="eyebrow">Step 3 of 4</p>
+    <h2 class="h-md" style="margin-top:10px">How much energy has ${petName()} got?</h2>
+  </div>
+  <div style="margin-top:22px;display:flex;flex-direction:column;gap:9px">
+    ${[['low','Settles easily, short bursts'],['medium','Keen but not relentless'],['high','Never seems to run out']].map(([k,d])=>
+      `<button class="chip" aria-pressed="${S.energy===k}" onclick="setVal('energy','${k}')" style="padding:14px 16px">
+        <span style="display:block;font-size:15px;font-weight:600;text-transform:capitalize">${k}</span>
+        <span style="display:block;font-size:12.5px;opacity:.72;font-weight:400;margin-top:2px">${d}</span>
+      </button>`).join('')}
+  </div>
+  <div style="margin-top:26px">
+    <p class="eyebrow" style="margin-bottom:9px">Anything we should avoid?</p>
+    <div class="flow">
+      ${['Mobility issues','Food allergies','Guards food','Anxious','Senior','Recovering'].map(m=>
+        `<button class="chip sm" aria-pressed="${S.limits.includes(m)}" onclick="toggle('limits','${m}')">${m}</button>`).join('')}
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <p class="note" style="margin-top:20px">These are hard filters. Anything you flag here is removed from the library entirely, not just ranked lower.</p>
+  <button class="btn" style="margin-top:18px" onclick="go('ob4')" ${!S.energy?'disabled':''}>Continue</button>`,
+
+ob4:()=>`
+  <div style="padding-top:26px">
+    <p class="eyebrow">Step 4 of 4</p>
+    <h2 class="h-md" style="margin-top:10px">What have you got at home?</h2>
+    <p class="body-sm" style="margin-top:9px">We only suggest things you can do right now. Tick whatever is lying around.</p>
+  </div>
+  <div class="flow" style="margin-top:20px">
+    ${['Kibble','Treats','Towels','Cardboard','Muffin tin','Cups','Peanut butter','Yoghurt','Lick mat','Snuffle mat','Wand toy','Ping pong balls','Paper bags','Dried herbs'].map(m=>
+      `<button class="chip sm" aria-pressed="${S.mats.includes(m)}" onclick="toggle('mats','${m}')">${m}</button>`).join('')}
+  </div>
+  <div class="spacer"></div>
+  <p class="note" style="margin-top:22px">Nothing here needs buying. If you tick only kibble and towels, ${petName()} still gets an activity every day.</p>
+  <button class="btn" style="margin-top:18px" onclick="startDay()" ${S.mats.length<2?'disabled':''}>
+    ${S.mats.length<2?'Pick at least two':'Done — show me today'}
+  </button>`,
+
+today:()=>{
+  const a=S.act||pick();
+  return `
+  <div class="pet-row" style="padding:6px 0 18px">
+    <span class="avatar">${initial()}</span>
+    <span style="flex:1">
+      <span style="display:block;font-size:14.5px;font-weight:600;line-height:1.2">${petName()}</span>
+      <span style="display:block;font-size:11.5px;color:var(--ink-faint)">${S.age||'1–7'} · ${S.size||'Medium'} ${S.sp||'dog'}</span>
+    </span>
+    <span class="body-xs">Wed 19 Nov</span>
+  </div>
+
+  <p class="eyebrow" style="margin-bottom:11px">Today's activity</p>
+  <div class="act-art">${mark(a.cat)}</div>
+
+  <h2 class="h-md" style="margin-top:16px">${a.t}</h2>
+  <div class="meta" style="margin-top:10px">
+    <span class="pill">${a.min} min</span>
+    <span class="pill">${CATNAME[a.cat]}</span>
+    ${a.mat.map(m=>`<span class="pill">${m}</span>`).join('')}
+  </div>
+  <p class="body-sm" style="margin-top:13px">${a.desc}</p>
+
+  <div class="spacer"></div>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-top:18px">
+    <button class="btn" onclick="openAct()">Show me how</button>
+    <button class="btn ghost" onclick="swap()">Not today — something else</button>
+  </div>`;
+},
+
+detail:()=>{
+  const a=S.act;
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0 16px">
+    <button onclick="go('today')" aria-label="Back" style="display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:var(--ink-soft)">
+      <svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M15 6l-6 6 6 6"/></svg>
+      Today
+    </button>
+    <button onclick="fav('${a.id}',event)" aria-label="Save activity">
+      <svg class="heart ${S.favs.includes(a.id)?'on':''}" viewBox="0 0 24 24" style="width:19px;height:19px"><path d="M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5z"/></svg>
+    </button>
+  </div>
+
+  <h2 class="h-md">${a.t}</h2>
+  <p class="body-xs" style="margin-top:6px">${CATNAME[a.cat]} · ${a.min} min · ${a.mat.join(', ').toLowerCase()}</p>
+
+  <div class="why" style="margin-top:18px">
+    <p class="eyebrow">Why this works</p>
+    <p>${a.why}</p>
+  </div>
+
+  <p class="eyebrow" style="margin:22px 0 13px">Steps</p>
+  <div style="display:flex;flex-direction:column;gap:13px">
+    ${a.steps.map((s,i)=>`<div class="step"><span class="step-n">${i+1}</span><p>${s}</p></div>`).join('')}
+  </div>
+
+  ${a.safe?`<div class="safety" style="margin-top:20px">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>${a.safe}</span></div>`:''}
+
+  <div class="spacer"></div>
+  <button class="btn" style="margin-top:22px" onclick="finish()">Mark done</button>`;
+},
+
+done:()=>{
+  const a=S.act;
+  return `
+  <div style="padding-top:26px">
+    <p class="eyebrow">${a.t}</p>
+    <h2 class="h-md" style="margin-top:9px">Nice. That counts.</h2>
+    <p class="body-sm" style="margin-top:9px">Three minutes of nose work is a real thing, not a consolation prize.</p>
+  </div>
+
+  <p class="eyebrow" style="margin:26px 0 10px">Add a photo</p>
+  <button class="photo-slot ${S.photo?'filled':''}" onclick="snap()">
+    ${S.photo
+      ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Added to ${petName()}'s book</span>`
+      : `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.4"/><path d="M8 6l1.5-2h5L16 6"/></svg><span>Tap to add</span>`}
+  </button>
+
+  <p class="eyebrow" style="margin:24px 0 10px">How did it go?</p>
+  <div class="react">
+    <button onclick="react('loved')">Loved it</button>
+    <button onclick="react('fine')">Fine</button>
+    <button onclick="react('hard')">Too hard</button>
+    <button onclick="react('no')">Not interested</button>
+  </div>
+
+  <div class="spacer"></div>
+  <p class="note" style="margin-top:22px">This is the only feedback the recommendation engine gets. Four taps, no typing.</p>`;
+},
+
+reacted:()=>{
+  const r=S.reaction;
+  const copy={
+    loved:['Noted.','We will find more foraging games like this one, and step the difficulty up a little.'],
+    fine:['Noted.','Nothing changes. We will keep varying the categories.'],
+    hard:['Noted.','We will step back down a level and come at this one again later.'],
+    no:['Noted.','You will not see this one again, and we will go lighter on similar activities.']
+  }[r];
+  return `
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;padding:20px 0">
+    <div class="act-art" style="height:150px">${mark(S.act.cat)}</div>
+    <div>
+      <h2 class="h-md">${copy[0]}</h2>
+      <p class="body-sm" style="margin-top:10px">${copy[1]}</p>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><b>${S.sessions.length}</b><span>activities this month</span></div>
+      <div class="stat"><b>${S.sessions.filter(x=>x.photo).length}</b><span>photos saved</span></div>
+    </div>
+    <p class="note">No streak was started and none can be broken. Tomorrow is a fresh single activity either way.</p>
+    <div class="spacer"></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="btn" onclick="go('memory')">See ${petName()}'s book</button>
+      <button class="btn ghost" onclick="go('today')">Back to today</button>
+    </div>
+  </div>`;
+},
+
+memory:()=>`
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0 16px">
+    <div>
+      <h2 class="h-md">${petName()}'s book</h2>
+      <p class="body-xs" style="margin-top:3px">November</p>
+    </div>
+    <span class="avatar">${initial()}</span>
+  </div>
+
+  <div class="stat-row" style="margin-bottom:18px">
+    <div class="stat"><b>${S.sessions.length}</b><span>activities</span></div>
+    <div class="stat"><b>${S.sessions.filter(x=>x.photo).length}</b><span>photos</span></div>
+    <div class="stat"><b>6</b><span>categories</span></div>
+  </div>
+
+  <div class="book">
+    ${S.sessions.slice(0,12).map(s=>`
+      <div class="snap ${s.photo?'photo':''}">
+        ${mark(s.cat)}
+        <span class="d">${s.d}</span>
+      </div>`).join('')}
+  </div>
+
+  <p class="note" style="margin-top:20px">No streaks. Off days are just off days — the gaps are not counted against you.</p>
+
+  <p class="eyebrow" style="margin:22px 0 9px">Most loved</p>
+  <div class="flow">
+    ${S.favs.map(id=>{const a=LIB.find(x=>x.id===id);return a?`<span class="pill">${a.t}</span>`:'';}).join('')}
+    <span class="pill">Frozen lick mat</span>
+  </div>
+
+  <div class="spacer"></div>
+  <button class="btn line" style="margin-top:22px">Share November recap</button>`,
+
+library:()=>{
+  const f=S.filter;
+  let list=pool();
+  if(f==='quick')list=list.filter(a=>a.min<=3);
+  if(f==='saved')list=list.filter(a=>S.favs.includes(a.id));
+  if(f==='calm')list=list.filter(a=>a.cat==='passive'||a.cat==='sensory');
+  if(f==='nobuy')list=list.filter(a=>!a.mat.join(' ').toLowerCase().match(/lick mat|snuffle|wand|ping pong/));
+  return `
+  <div style="padding:6px 0 14px">
+    <h2 class="h-md">Library</h2>
+    <p class="body-xs" style="margin-top:3px">${pool().length} activities for ${petName()}</p>
+  </div>
+
+  <div class="flow" style="margin-bottom:6px">
+    ${[['all','Everything'],['quick','Under 3 min'],['nobuy','Nothing to buy'],['calm','Calming'],['saved','Saved']].map(([k,l])=>
+      `<button class="chip sm" aria-pressed="${f===k}" onclick="setFilter('${k}')">${l}</button>`).join('')}
+  </div>
+
+  <div style="margin-top:8px">
+    ${list.length?list.map(a=>`
+      <button class="row" onclick="openAct('${a.id}')">
+        <span class="row-art">${mark(a.cat)}</span>
+        <span class="row-b">
+          <p>${a.t}</p>
+          <span>${a.min} min · ${CATNAME[a.cat]} · ${a.mat[0].toLowerCase()}</span>
+        </span>
+        <svg class="heart ${S.favs.includes(a.id)?'on':''}" viewBox="0 0 24 24" onclick="fav('${a.id}',event)"><path d="M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5c0 5-7 9.5-7 9.5z"/></svg>
+      </button>`).join('')
+    : `<p class="body-sm" style="padding:28px 0;text-align:center">Nothing saved yet. Tap the heart on any activity ${petName()} enjoys.</p>`}
+  </div>
+
+  <div class="spacer"></div>
+  <p class="note" style="margin-top:20px">Launch target is 200 activities — roughly 120 dog, 80 cat. About six months before anything repeats.</p>`;
+}
+
+};
+
+hardReset();
+</script>
+</body>
+</html>
