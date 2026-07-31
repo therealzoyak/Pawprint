@@ -9,20 +9,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#EDF0E7;
-  --paper-deep:#E3E8D9;
-  --card:#FCFDFA;
-  --ink:#16241A;
-  --ink-soft:#4C5C4E;
-  --ink-faint:#7F8D7F;
-  --line:#D3DAC7;
-  --moss:#2C4632;
-  --grass:#A8CC3A;
-  --grass-deep:#5F7A16;
-  --ochre:#E0A03A;
-  --ochre-pale:#F7ECD4;
-  --ochre-deep:#7A5410;
-  --clay:#C4643C;
+  --paper:#F7F9FF;
+  --paper-deep:#EAF0FF;
+  --card:#FFFFFF;
+  --ink:#14243D;
+  --ink-soft:#51627A;
+  --ink-faint:#8290A5;
+  --line:#D9E2F5;
+  --moss:#165DFF;
+  --grass:#FFB800;
+  --grass-deep:#165DFF;
+  --ochre:#FFB800;
+  --ochre-pale:#FFF6DA;
+  --ochre-deep:#8A5A00;
+  --clay:#FF6257;
+  --violet:#7357FF;
   --r:14px;
   --display:"Fraunces",Georgia,"Times New Roman",serif;
   --body:"Figtree",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
@@ -30,7 +31,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{
-  background:var(--paper);
+  background:radial-gradient(circle at 8% 3%,rgba(255,184,0,.17),transparent 26rem),radial-gradient(circle at 94% 12%,rgba(255,98,87,.12),transparent 24rem),radial-gradient(circle at 72% 88%,rgba(115,87,255,.08),transparent 28rem),var(--paper);
   color:var(--ink);
   font-family:var(--body);
   font-size:16px;
@@ -46,7 +47,7 @@ input{font-family:inherit;font-size:inherit;color:inherit}
 .mast{padding:52px 0 30px}
 .mast-row{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;flex-wrap:wrap}
 .brand{font-family:var(--display);font-size:56px;font-weight:600;letter-spacing:-.028em;line-height:.95;font-variation-settings:"SOFT" 60,"WONK" 1}
-.brand em{font-style:normal;color:var(--grass-deep)}
+.brand em{font-style:normal;color:var(--clay)}
 .tag{font-family:var(--display);font-size:20px;font-weight:300;font-style:italic;color:var(--ink-soft);margin-top:10px;max-width:34ch;line-height:1.35}
 .stamp{border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);white-space:nowrap;background:var(--card)}
 
@@ -70,7 +71,7 @@ input{font-family:inherit;font-size:inherit;color:inherit}
 .phone-col{position:sticky;top:28px}
 .phone{
   width:392px;height:790px;background:var(--moss);border-radius:44px;padding:11px;
-  box-shadow:0 2px 0 rgba(22,36,26,.10),0 22px 44px -20px rgba(22,36,26,.34);
+  box-shadow:0 2px 0 rgba(20,36,61,.10),0 22px 48px -20px rgba(23,104,172,.36);
 }
 .glass{
   width:100%;height:100%;background:var(--card);border-radius:34px;overflow:hidden;
@@ -99,11 +100,11 @@ input{font-family:inherit;font-size:inherit;color:inherit}
 
 /* ---------- controls ---------- */
 .btn{
-  display:block;width:100%;text-align:center;background:var(--moss);color:var(--paper);
+  display:block;width:100%;text-align:center;background:linear-gradient(135deg,var(--moss),var(--violet));color:#fff;
   border-radius:12px;padding:15px;font-size:15.5px;font-weight:600;letter-spacing:.01em;
-  transition:transform .1s,opacity .16s;
+  box-shadow:0 9px 20px -10px rgba(22,93,255,.75);transition:transform .14s,box-shadow .16s,opacity .16s;
 }
-.btn:hover{opacity:.9}
+.btn:hover{opacity:.96;transform:translateY(-1px);box-shadow:0 12px 24px -10px rgba(22,93,255,.85)}
 .btn:active{transform:scale(.985)}
 .btn.ghost{background:transparent;color:var(--ink-faint);font-weight:500;font-size:14px;padding:11px}
 .btn.ghost:hover{color:var(--ink)}
@@ -114,8 +115,8 @@ input{font-family:inherit;font-size:inherit;color:inherit}
   border:1px solid var(--line);background:var(--card);border-radius:11px;
   padding:11px 14px;font-size:14px;font-weight:500;text-align:left;transition:all .14s;
 }
-.chip:hover{border-color:var(--ink-faint)}
-.chip[aria-pressed="true"]{background:var(--moss);border-color:var(--moss);color:var(--paper)}
+.chip:hover{border-color:#9CB8FA;transform:translateY(-1px);box-shadow:0 8px 18px -14px rgba(22,93,255,.7)}
+.chip[aria-pressed="true"]{background:linear-gradient(135deg,var(--moss),var(--violet));border-color:transparent;color:#fff;box-shadow:0 8px 18px -12px rgba(22,93,255,.8)}
 .chip.sm{padding:7px 13px;font-size:12.5px;border-radius:999px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .flow{display:flex;flex-wrap:wrap;gap:7px}
@@ -129,7 +130,7 @@ input{font-family:inherit;font-size:inherit;color:inherit}
 /* ---------- activity card ---------- */
 .act-art{
   height:150px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;
-  background:var(--paper-deep);position:relative;overflow:hidden;
+  background:linear-gradient(145deg,#EEF4FF,#FFF3D7);position:relative;overflow:hidden;
 }
 .act-art svg{width:96px;height:96px}
 .mark{stroke:var(--grass-deep);fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
@@ -157,10 +158,37 @@ input{font-family:inherit;font-size:inherit;color:inherit}
 /* ---------- pet header ---------- */
 .pet-row{display:flex;align-items:center;gap:10px}
 .avatar{
-  width:34px;height:34px;border-radius:50%;background:var(--grass);
+  width:38px;height:38px;border-radius:13px;background:var(--paper-deep);
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--display);font-size:16px;font-weight:600;color:var(--moss);
+  font-family:var(--display);font-size:21px;font-weight:600;color:var(--moss);
+  box-shadow:inset 0 0 0 1px var(--line);
 }
+.pet-hero{height:190px;border-radius:22px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:24px;background:linear-gradient(145deg,#176BFF 0%,#5A4DFF 100%);position:relative;overflow:hidden;color:#fff}
+.pet-hero::before{content:"";position:absolute;width:150px;height:150px;border:2px solid rgba(255,255,255,.18);border-radius:50%;right:-46px;top:-60px}
+.pet-hero::after{content:"";position:absolute;width:74px;height:9px;border-radius:999px;background:var(--grass);left:24px;top:25px}
+.hero-message{font-family:var(--display);font-size:29px;font-weight:550;line-height:1.05;letter-spacing:-.025em;max-width:9ch;position:relative;z-index:1}
+.hero-sub{font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.82);margin-top:10px;max-width:27ch;position:relative;z-index:1}
+.pet-face{width:90px;height:90px;border-radius:28px;display:grid;place-items:center;font-size:52px;line-height:1;background:#fff;box-shadow:0 12px 28px rgba(8,54,94,.18);transform:rotate(-4deg);position:relative;z-index:1}
+.pet-face.cat{transform:rotate(5deg);background:#FFF3D9}
+.pet-line{position:relative;display:block;width:52px;height:45px;border:3px solid currentColor;border-radius:45% 45% 48% 48%;color:var(--moss);background:#fff}
+.pet-line::before,.pet-line::after{content:"";position:absolute;z-index:-1;width:20px;height:25px;border:3px solid currentColor;background:#fff;top:-12px}
+.pet-line::before{left:-6px;transform:rotate(-26deg);border-radius:14px 8px 12px 8px}
+.pet-line::after{right:-6px;transform:rotate(26deg);border-radius:8px 14px 8px 12px}
+.pet-line.cat::before,.pet-line.cat::after{width:19px;height:22px;top:-9px;border-radius:3px}
+.pet-line.cat::before{left:0;transform:rotate(-16deg)}
+.pet-line.cat::after{right:0;transform:rotate(16deg)}
+.pet-line i{position:absolute;left:50%;top:25px;width:8px;height:6px;transform:translateX(-50%);background:currentColor;border-radius:50% 50% 65% 65%}
+.pet-line i::before,.pet-line i::after{content:"";position:absolute;width:5px;height:7px;background:currentColor;border-radius:50%;top:-13px}
+.pet-line i::before{left:-11px}.pet-line i::after{right:-11px}
+.pet-face .pet-line{transform:scale(1.15)}
+.species-art{width:64px;height:60px;border-radius:18px;background:linear-gradient(145deg,#EEF4FF,#FFF7E3);display:flex;align-items:center;justify-content:center;isolation:isolate;flex:0 0 auto}
+.species-logo{display:block;width:100%;height:100%;border-radius:inherit;background-image:url('sniff-hero-pets-v2.png');background-repeat:no-repeat;background-size:200% auto;background-position-y:center}
+.species-logo.dog{background-position-x:left}.species-logo.cat{background-position-x:right}
+.species-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.species-grid .chip{padding:13px 11px;display:flex;align-items:center;gap:9px;min-width:0}
+.species-grid .species-art{width:42px;height:42px;border-radius:13px;font-size:23px}
+.species-grid .pet-line{transform:scale(.68)}
+.brand-paw{display:inline-flex;align-items:center;justify-content:center;width:.76em;height:.76em;margin-left:.12em;border-radius:50%;background:var(--grass);color:var(--moss);font-family:var(--body);font-size:.42em;vertical-align:.24em}
 
 /* ---------- memory scrapbook ---------- */
 .book{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
@@ -255,10 +283,10 @@ input{font-family:inherit;font-size:inherit;color:inherit}
   <header class="mast">
     <div class="mast-row">
       <div>
-        <div class="brand">Sni<em>ff</em></div>
+        <div class="brand">Sni<em>ff</em><span class="brand-paw" aria-hidden="true">🐾</span></div>
         <p class="tag">One tiny enrichment activity a day, for your dog or cat.</p>
       </div>
-      <div class="stamp">Interactive prototype</div>
+      <div class="stamp">1,000 activities loaded</div>
     </div>
 
     <nav class="trail" aria-label="Walkthrough sections">
@@ -303,6 +331,7 @@ input{font-family:inherit;font-size:inherit;color:inherit}
   </div>
 </div>
 
+<script src="activities-data.js"></script>
 <script>
 /* ============ category marks ============ */
 const MARKS = {
@@ -314,10 +343,20 @@ const MARKS = {
   social:'<circle cx="25" cy="33" r="15" class="mark"/><circle cx="43" cy="33" r="15" class="mark"/><circle cx="34" cy="33" r="3.2" class="mark-fill"/>'
 };
 const CATNAME = {foraging:'Foraging',cognitive:'Cognitive',sensory:'Sensory',physical:'Physical',passive:'Calming',social:'Social'};
+const SPECIES = {
+  dog:['Dog','🐶','Luna'],cat:['Cat','🐱','Milo'],rabbit:['Rabbit','🐰','Clover'],'guinea-pig':['Guinea pig','🐹','Pip'],hamster:['Hamster','🐹','Peanut'],
+  parrot:['Parrot','🦜','Kiwi'],rat:['Rat','🐀','Remy'],ferret:['Ferret','🐾','Noodle'],chinchilla:['Chinchilla','🐭','Dusty'],bird:['Bird','🐦','Sunny'],
+  'bearded-dragon':['Bearded dragon','🦎','Spike'],'betta-fish':['Betta fish','🐟','Finn'],turtle:['Turtle','🐢','Shelly'],'hermit-crab':['Hermit crab','🦀','Sandy'],
+  fish:['Fish','🐠','Bubbles'],gecko:['Gecko','🦎','Echo'],snake:['Snake','🐍','Noodle'],toad:['Toad','🐸','Moss'],axolotl:['Axolotl','🫧','Lotl']
+};
 function mark(cat,cls){return '<svg viewBox="0 0 66 66" aria-hidden="true" class="'+(cls||'')+'">'+MARKS[cat]+'</svg>';}
+function petLine(sp){return '<span class="pet-line '+sp+'" aria-hidden="true"><i></i></span>';}
+function speciesLabel(sp){return (SPECIES[sp]||[sp])[0];}
+function speciesIcon(sp){return (SPECIES[sp]||['','🐾'])[1];}
+function speciesArt(sp){return sp==='dog'||sp==='cat'?'<span class="species-logo '+sp+'" aria-hidden="true"></span>':'<span aria-hidden="true">'+speciesIcon(sp)+'</span>';}
 
 /* ============ content library ============ */
-const LIB = [
+const CURATED_LIB = [
   /* ---- dog ---- */
   {id:'d1',sp:'dog',t:'Towel burrito',cat:'foraging',tier:1,min:3,mat:['A hand towel','Her kibble'],
    desc:'A rolled-up towel hides her dinner. She unrolls it with her nose.',
@@ -422,6 +461,7 @@ const LIB = [
    steps:['Rub a clean cloth on a fence post, tree or doorstep outside.','Bring it in and leave it on the floor.','Say nothing and let him find it.','Swap it for a fresh one in a few days.'],
    safe:'Avoid anywhere unknown animals may have been if he is unvaccinated.'}
 ];
+const LIB = [...CURATED_LIB,...(window.THOUSAND_ACTIVITIES||[])];
 
 /* ============ state ============ */
 const SEED = [
@@ -432,28 +472,75 @@ const SEED = [
   {id:'s9',cat:'sensory',d:'Nov 9',photo:false}
 ];
 let S = {};
-function hardReset(){
-  S = {screen:'welcome',sp:null,name:'',age:null,size:null,energy:null,
+const STORAGE_KEY = 'sniff-mvp-v1';
+const DEV_RESET_ON_OPEN = ['localhost','127.0.0.1',''].includes(window.location.hostname);
+function hardReset(clear=true){
+  if(clear) localStorage.removeItem(STORAGE_KEY);
+  S = {screen:'welcome',sp:null,name:'',age:null,size:null,energy:null,attention:null,
        limits:[],mats:[],act:null,swaps:0,sessions:SEED.slice(),
-       done:null,photo:false,reaction:null,favs:['d1','d4'],filter:'all'};
+       done:null,photo:false,reaction:null,favs:['d1','d4'],filter:'all',reactions:{},dismissed:[]};
   render();
   window.scrollTo({top:0,behavior:'smooth'});
 }
+function boot(){
+  // Development previews always start clean; deployed builds may restore a profile.
+  if(DEV_RESET_ON_OPEN){hardReset(true);return;}
+  try {
+    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(saved&&saved.screen){S={...saved,attention:saved.attention||null,reactions:saved.reactions||{},dismissed:saved.dismissed||[]};render();return;}
+  } catch (_) {}
+  hardReset(false);
+}
+function persist(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(S));}catch(_){}}
 
 /* ============ selection logic ============ */
 function pool(){
   const sp = S.sp || 'dog';
   return LIB.filter(a=>a.sp===sp);
 }
+function ownsMaterial(required){
+  if(!S.mats.length)return true;
+  const r=required.toLowerCase();
+  const aliases={'kibble':['Kibble'],'treat':['Treats','Kibble'],'towel':['Towels'],'cardboard':['Cardboard'],'cup':['Cups'],'bowl':['Cups'],'muffin':['Muffin tin'],'peanut':['Peanut butter'],'yoghurt':['Yoghurt'],'lick mat':['Lick mat'],'snuffle':['Snuffle mat'],'wand':['Wand toy'],'ping pong':['Ping pong balls'],'paper bag':['Paper bags'],'herb':['Dried herbs']};
+  const key=Object.keys(aliases).find(k=>r.includes(k));
+  return !key||aliases[key].some(x=>S.mats.includes(x));
+}
+function isSafe(a){
+  const text=(a.t+' '+a.desc+' '+(a.safe||'')).toLowerCase();
+  if(S.limits.includes('Mobility issues')&&(a.cat==='physical'||text.includes('jump')))return false;
+  if(S.limits.includes('Guards food')&&a.mat.some(m=>/kibble|treat|food|peanut|yoghurt/i.test(m)))return false;
+  if(S.limits.includes('Food allergies')&&a.mat.some(m=>/peanut|yoghurt/i.test(m)))return false;
+  if((S.limits.includes('Senior')||S.limits.includes('Recovering'))&&a.tier>1)return false;
+  return a.mat.every(ownsMaterial);
+}
 function pick(){
   const p = pool();
   const recent = S.sessions.slice(0,3).map(x=>x.id);
-  const ok = p.filter(a=>!recent.includes(a.id) && a.tier<=(S.energy==='high'?3:2));
-  const list = ok.length?ok:p;
-  return list[S.swaps % list.length];
+  const maxTier=S.energy==='high'?3:S.energy==='medium'?2:1;
+  let ok=p.filter(a=>!recent.includes(a.id)&&!S.dismissed.includes(a.id)&&a.tier<=maxTier&&isSafe(a));
+  if(!ok.length)ok=p.filter(a=>!S.dismissed.includes(a.id)&&isSafe(a));
+  const loved=Object.entries(S.reactions).filter(([,r])=>r==='loved').map(([id])=>LIB.find(a=>a.id===id)?.cat);
+  ok.sort((a,b)=>{
+    const lovedScore=loved.filter(x=>x===b.cat).length-loved.filter(x=>x===a.cat).length;
+    if(lovedScore)return lovedScore;
+    const attentionScore=(b.attention===S.attention)-(a.attention===S.attention);
+    if(attentionScore)return attentionScore;
+    return a.sourceNumber&&b.sourceNumber?a.sourceNumber-b.sourceNumber:0;
+  });
+  const list=ok.length?ok:p.filter(isSafe);
+  if(!list.length)return p[0];
+  if(S.attention==='high')list.sort((a,b)=>b.min-a.min);
+  if(S.attention==='low')list.sort((a,b)=>a.min-b.min);
+  const day=Math.floor(Date.now()/86400000);
+  const petSeed=[...petName()].reduce((n,c)=>n+c.charCodeAt(0),0);
+  return list[(day+petSeed+S.swaps)%list.length];
 }
-function petName(){return S.name.trim() || (S.sp==='cat'?'Milo':'Luna');}
+function petName(){return S.name.trim() || (SPECIES[S.sp]||['','',S.sp==='cat'?'Milo':'Luna'])[2];}
 function initial(){return petName().charAt(0).toUpperCase();}
+function todayLabel(){return new Date().toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});}
+function attentionPlan(){
+  return S.attention==='high'?'Two short connection moments today':S.attention==='low'?'One easy, independent activity':'One focused play session today';
+}
 
 /* ============ walkthrough nav ============ */
 const TRAIL = [
@@ -473,7 +560,7 @@ function trailKey(){
   return 'today';
 }
 function jump(t){
-  if(t.s!=='welcome' && !S.sp){S.sp='dog';S.name='Luna';S.energy='medium';S.mats=['Kibble','Towels','Cardboard','Treats'];}
+  if(t.s!=='welcome' && !S.sp){S.sp='dog';S.name='Luna';S.energy='medium';S.attention='high';S.mats=['Kibble','Towels','Cardboard','Treats'];}
   if(t.s==='detail'||t.s==='done'){S.act=S.act||pick();}
   S.screen=t.s;render();
 }
@@ -496,9 +583,10 @@ const PANEL = {
     n:['<b>Bands, not exact figures.</b> Nobody wants to type a birth date. Bands are enough to filter age-inappropriate activities.',
        '<b>Size gates real things.</b> Box tunnels and certain puzzle feeders are not suitable at both ends of the size range.',
        '<b>Multi-pet households get separate profiles</b> — but the daily card still shows one pet at a time. Two activities at once breaks the core promise.']},
-  ob3:{k:'Screen 03 — onboarding',t:'Energy, and the things to avoid',
-    l:'Energy level sets the ceiling on intensity. The limitations list is the safety-critical field in the entire product — it is the difference between a good recommendation and an injured animal.',
+  ob3:{k:'Screen 03 — onboarding',t:'Energy and attention are different',
+    l:'Intensity describes how active the activity should be. Attention describes how much connection the pet needs. Keeping them separate produces a more accurate daily plan.',
     n:['<b>Limitations are hard filters, never soft weights.</b> A mobility-limited dog must never be shown a box tunnel, regardless of how well it scores otherwise.',
+       '<b>Attention controls frequency.</b> A medium-energy pet with high attention needs gets more connection moments without being pushed into high-intensity exercise.',
        '<b>Start everyone at tier one anyway.</b> Even a high-energy dog gets the easiest activities for the first week. Earning trust beats matching capability.',
        '<b>Behaviour problems get their own path.</b> An optional branch here — chewing, barking, night activity, litter box issues — biases early recommendations and routes serious cases toward a professional.']},
   ob4:{k:'Screen 04 — onboarding',t:'What is already in the house',
@@ -540,6 +628,7 @@ const PANEL = {
 
 /* ============ render ============ */
 function render(){
+  persist();
   const scr = document.getElementById('screen');
   const nav = document.getElementById('navbar');
   const showNav = ['today','detail','done','reacted','memory','library'].includes(S.screen);
@@ -597,7 +686,9 @@ function finish(){S.photo=false;S.reaction=null;S.screen='done';render();}
 function snap(){S.photo=!S.photo;render();}
 function react(r){
   S.reaction=r;
-  S.sessions.unshift({id:S.act.id,cat:S.act.cat,d:'Nov 19',photo:S.photo});
+  S.reactions[S.act.id]=r;
+  if(r==='no'&&!S.dismissed.includes(S.act.id))S.dismissed.push(S.act.id);
+  S.sessions.unshift({id:S.act.id,cat:S.act.cat,d:new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'}),photo:S.photo});
   S.screen='reacted';render();
 }
 function fav(id,e){
@@ -613,20 +704,14 @@ const SCREENS = {
 
 welcome:()=>`
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:24px;padding:20px 0">
-    <div class="act-art" style="height:180px;background:var(--moss)">
-      <svg viewBox="0 0 66 66" aria-hidden="true" style="width:110px;height:110px">
-        <g style="stroke:var(--grass);fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round">
-          <path d="M8 54 C 20 46, 24 32, 34 26 S 52 20, 58 8"/>
-        </g>
-        <g style="fill:var(--grass)">
-          <circle cx="16" cy="32" r="2.8"/><circle cx="31" cy="21" r="2.8"/>
-          <circle cx="46" cy="34" r="2.8"/><circle cx="35" cy="45" r="2.8"/>
-        </g>
-      </svg>
+    <div class="pet-hero" aria-label="Sniff's promise: small moments make happier pets">
+      <p class="hero-message">Small moments. Happier pets.</p>
+      <p class="hero-sub">A little curiosity, play, and connection can change their whole day.</p>
     </div>
     <div>
-      <h1 class="h-lg">One small thing a day for your animal.</h1>
-      <p class="body-sm" style="margin-top:12px">Three minutes. Things you already own. No streaks to break and nothing to catch up on.</p>
+      <p class="eyebrow" style="color:var(--clay);margin-bottom:9px">Made for curious pets</p>
+      <h1 class="h-lg">A happier day starts with one little game.</h1>
+      <p class="body-sm" style="margin-top:12px">Easy enrichment for your dog or cat, using a few minutes and things you already have.</p>
     </div>
     <div class="spacer"></div>
     <div style="display:flex;flex-direction:column;gap:7px">
@@ -643,9 +728,7 @@ ob1:()=>`
   <div style="margin-top:28px;display:flex;flex-direction:column;gap:11px">
     ${['dog','cat'].map(sp=>`
       <button class="chip" style="padding:20px;display:flex;align-items:center;gap:16px" onclick="setSp('${sp}')">
-        <span style="width:52px;height:52px;border-radius:14px;background:var(--paper-deep);display:flex;align-items:center;justify-content:center">
-          ${mark(sp==='dog'?'foraging':'sensory')}
-        </span>
+        <span class="species-art">${speciesArt(sp)}</span>
         <span>
           <span style="display:block;font-size:17px;font-weight:600;text-transform:capitalize">${sp}</span>
           <span style="display:block;font-size:12.5px;color:var(--ink-faint);font-weight:400;margin-top:2px">
@@ -654,18 +737,26 @@ ob1:()=>`
         </span>
       </button>`).join('')}
   </div>
+  <p class="eyebrow" style="margin:24px 0 10px">More pets</p>
+  <div class="species-grid">
+    ${Object.keys(SPECIES).filter(sp=>sp!=='dog'&&sp!=='cat').map(sp=>`
+      <button class="chip" onclick="setSp('${sp}')">
+        <span class="species-art">${speciesArt(sp)}</span>
+        <span style="font-size:12.5px;font-weight:600;line-height:1.2">${speciesLabel(sp)}</span>
+      </button>`).join('')}
+  </div>
   <div class="spacer"></div>
-  <p class="note">Cat activities are written separately by a feline behaviour consultant — they follow the hunt sequence, not a shrunken dog routine.</p>`,
+  <p class="note">Choose the exact species so the recommendation engine only considers activities written for that kind of pet.</p>`,
 
 ob2:()=>`
   <div style="padding-top:26px">
     <p class="eyebrow">Step 2 of 4</p>
-    <h2 class="h-md" style="margin-top:10px">Tell us about your ${S.sp}.</h2>
+    <h2 class="h-md" style="margin-top:10px">Tell us about your ${speciesLabel(S.sp).toLowerCase()}.</h2>
   </div>
   <div style="margin-top:24px;display:flex;flex-direction:column;gap:20px">
     <div>
       <p class="eyebrow" style="margin-bottom:8px">Name</p>
-      <input class="field" id="nm" value="${S.name}" placeholder="${S.sp==='cat'?'Milo':'Luna'}" oninput="setName(this.value)" aria-label="Pet name">
+      <input class="field" id="nm" value="${S.name}" placeholder="${(SPECIES[S.sp]||['','',S.sp==='cat'?'Milo':'Luna'])[2]}" oninput="setName(this.value)" aria-label="Pet name">
     </div>
     <div>
       <p class="eyebrow" style="margin-bottom:8px">Age</p>
@@ -688,13 +779,22 @@ ob2:()=>`
 ob3:()=>`
   <div style="padding-top:26px">
     <p class="eyebrow">Step 3 of 4</p>
-    <h2 class="h-md" style="margin-top:10px">How much energy has ${petName()} got?</h2>
+    <h2 class="h-md" style="margin-top:10px">What kind of engagement does ${petName()} need?</h2>
   </div>
-  <div style="margin-top:22px;display:flex;flex-direction:column;gap:9px">
+  <p class="eyebrow" style="margin:22px 0 9px">Activity intensity</p>
+  <div style="display:flex;flex-direction:column;gap:9px">
     ${[['low','Settles easily, short bursts'],['medium','Keen but not relentless'],['high','Never seems to run out']].map(([k,d])=>
       `<button class="chip" aria-pressed="${S.energy===k}" onclick="setVal('energy','${k}')" style="padding:14px 16px">
         <span style="display:block;font-size:15px;font-weight:600;text-transform:capitalize">${k}</span>
         <span style="display:block;font-size:12.5px;opacity:.72;font-weight:400;margin-top:2px">${d}</span>
+      </button>`).join('')}
+  </div>
+  <p class="eyebrow" style="margin:24px 0 9px">Attention needed</p>
+  <div class="grid2">
+    ${[['low','Independent'],['medium','Regular check-ins'],['high','Frequent connection']].map(([k,d])=>
+      `<button class="chip" aria-pressed="${S.attention===k}" onclick="setVal('attention','${k}')" style="padding:13px 12px">
+        <span style="display:block;font-size:14px;font-weight:600;text-transform:capitalize">${k}</span>
+        <span style="display:block;font-size:11.5px;opacity:.72;font-weight:400;margin-top:2px">${d}</span>
       </button>`).join('')}
   </div>
   <div style="margin-top:26px">
@@ -705,8 +805,8 @@ ob3:()=>`
     </div>
   </div>
   <div class="spacer"></div>
-  <p class="note" style="margin-top:20px">These are hard filters. Anything you flag here is removed from the library entirely, not just ranked lower.</p>
-  <button class="btn" style="margin-top:18px" onclick="go('ob4')" ${!S.energy?'disabled':''}>Continue</button>`,
+  <p class="note" style="margin-top:20px">We use both answers separately: intensity shapes the activity; attention shapes how often and how involved it should be.</p>
+  <button class="btn" style="margin-top:18px" onclick="go('ob4')" ${!S.energy||!S.attention?'disabled':''}>Continue</button>`,
 
 ob4:()=>`
   <div style="padding-top:26px">
@@ -728,12 +828,12 @@ today:()=>{
   const a=S.act||pick();
   return `
   <div class="pet-row" style="padding:6px 0 18px">
-    <span class="avatar">${initial()}</span>
+    <span class="avatar" aria-label="${speciesLabel(S.sp||'dog')} profile">${speciesIcon(S.sp||'dog')}</span>
     <span style="flex:1">
       <span style="display:block;font-size:14.5px;font-weight:600;line-height:1.2">${petName()}</span>
-      <span style="display:block;font-size:11.5px;color:var(--ink-faint)">${S.age||'1–7'} · ${S.size||'Medium'} ${S.sp||'dog'}</span>
+      <span style="display:block;font-size:11.5px;color:var(--ink-faint)">${S.age||'1–7'} · ${S.size||'Medium'} ${speciesLabel(S.sp||'dog').toLowerCase()}</span>
     </span>
-    <span class="body-xs">Wed 19 Nov</span>
+    <span class="body-xs">${todayLabel()}</span>
   </div>
 
   <p class="eyebrow" style="margin-bottom:11px">Today's activity</p>
@@ -744,6 +844,11 @@ today:()=>{
     <span class="pill">${a.min} min</span>
     <span class="pill">${CATNAME[a.cat]}</span>
     ${a.mat.map(m=>`<span class="pill">${m}</span>`).join('')}
+    ${a.sourceNumber?`<span class="pill">Activity #${a.sourceNumber}</span>`:''}
+  </div>
+  <div class="why" style="margin-top:13px;background:var(--paper-deep)">
+    <p class="eyebrow" style="color:var(--moss)">Personalized for ${petName()}</p>
+    <p style="color:var(--ink-soft)">${attentionPlan()}. ${S.energy==='high'?'More active':S.energy==='low'?'Gentle':'Medium-intensity'} ideas, matched to ${S.attention||'medium'} attention needs.</p>
   </div>
   <p class="body-sm" style="margin-top:13px">${a.desc}</p>
 
@@ -850,7 +955,7 @@ memory:()=>`
       <h2 class="h-md">${petName()}'s book</h2>
       <p class="body-xs" style="margin-top:3px">November</p>
     </div>
-    <span class="avatar">${initial()}</span>
+    <span class="avatar" aria-label="${speciesLabel(S.sp||'dog')} profile">${speciesIcon(S.sp||'dog')}</span>
   </div>
 
   <div class="stat-row" style="margin-bottom:18px">
@@ -888,7 +993,7 @@ library:()=>{
   return `
   <div style="padding:6px 0 14px">
     <h2 class="h-md">Library</h2>
-    <p class="body-xs" style="margin-top:3px">${pool().length} activities for ${petName()}</p>
+    <p class="body-xs" style="margin-top:3px">${pool().length} matched activities for ${petName()}</p>
   </div>
 
   <div class="flow" style="margin-bottom:6px">
@@ -915,7 +1020,7 @@ library:()=>{
 
 };
 
-hardReset();
+boot();
 </script>
 </body>
 </html>
