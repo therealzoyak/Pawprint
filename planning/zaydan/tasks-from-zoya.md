@@ -1,51 +1,48 @@
 # Tasks for Zaydan
 
-Requested by Zoya · August 6, 2026
+Requested by Zoya · August 9, 2026
 
-## 1. Make sessions adapt to actual engagement
+## 1. Make the badge book more delightful
 
-- Track actual active time from the session timer, not the activity's preset duration.
-- If someone ends early, ask one lightweight follow-up such as whether the pet lost interest, became uncomfortable, or the owner simply needed to stop.
-- Use that answer and the elapsed time to adjust future duration recommendations for that pet. Do not assume every early stop means boredom.
-- When extra time remains, offer an optional `Add another activity` action that creates a short, compatible activity mix without interrupting the current flow.
-- Keep preset duration, actual duration, early-stop reason, and combined-session activities as separate data so later recommendations can learn from them.
+- Improve the Badges button on the home screen with a more aesthetic badge emblem and a stronger sense of personality.
+- Redesign the badge library so it feels like a real badge book rather than a standard progress list.
+- Use small rounded badge cells, playful artwork, and plenty of color.
+- Give badges clear visual states:
+  - **Achieved:** vibrant, celebratory, and fully colored.
+  - **In progress:** colorful and active, with progress shown clearly.
+  - **Locked:** visually distinct and subdued; grey or muted colors are appropriate only here.
+- Add a fun introductory header or celebratory hero at the top instead of jumping directly into the badge grid.
+- Keep the collection easy to scan without filling it with explanatory text.
 
-### Done when
+## 2. Expand and improve the play library
 
-- A five-minute activity stopped after three minutes records three minutes of play.
-- The completion screen captures an early-stop reason in one tap and does not feel like a survey.
-- Future suggestions can become shorter or change style based on repeated outcomes.
-- Owners can extend a session with a compatible second activity when their available time permits.
+- Show the important specifications on every activity: estimated time, required materials, and activity type.
+- Prioritize activities recommended specifically for Cookie while still allowing the owner to browse any or all safe activities.
+- Add a clear way to switch between recommended activities and the full library.
+- Support filtering by multiple activity types at once rather than forcing a single selection.
+- Make the active filters obvious and easy to clear.
+- Preserve all existing pet-safety, materials, and profile-based eligibility rules.
 
-## 2. Separate enrichment play from routine care
+## 3. Add a proper activity end screen
 
-- Establish two clear content types: `Play & enrichment` and `Routine care`.
-- Keep the primary Play flow focused on enrichment suggestions.
-- Give the dashboard a compact daily-care area for brushing, coat checks, nail/paw care, dental care, medication, and other pet-specific reminders.
-- Present care items inline on the dashboard or as a dedicated full-screen destination; avoid stacking modal cards.
-- Let owners set a useful cadence without turning care into streak pressure. Completion should feel reassuring and contribute to a weekly care summary.
-- Include consent-based tips and gentler alternatives when a pet dislikes grooming, with appropriate vet or professional-groomer guidance for pain, severe matting, or sudden sensitivity.
+- When an activity finishes, show a dedicated completion screen instead of dropping the user back into the Play flow.
+- Celebrate the completed time with the pet and provide a clear sense of closure.
+- Keep reaction, early-stop reason, notes, and memory/photo capture available without making the screen feel like a survey.
+- After the owner finishes the completion flow, return them directly to the home screen.
+- Ensure the saved play time and feedback are reflected immediately in home progress and future recommendations.
 
-### Done when
+## 4. Add a daily play-minute goal
 
-- Owners can immediately tell whether an item is play or care.
-- Care reminders do not compete with the main activity recommendation.
-- Completing care is tracked separately from active play minutes.
-- The dashboard stays simple even when a pet has several recurring needs.
+- Let owners choose how many minutes they want to play with each pet per day.
+- Include this in setup and make it editable later from the pet profile or progress area.
+- Show today's completed minutes against the daily goal on the home screen.
+- Keep the goal encouraging rather than streak-based or guilt-inducing.
+- Handle days with multiple activities and multiple pets independently and accurately.
 
-## 3. Keep recommendations current without questionnaire fatigue
+## 5. Polish copy and strengthen the color palette
 
-- Add a quick way to update temperament, energy, sensitivities, health context, and current situation from the pet profile.
-- Prefer passive learning from completed sessions, elapsed time, reactions, skipped activities, and care outcomes.
-- Ask at most one contextual question when it materially changes today's recommendation; reuse recent answers instead of asking on every app open.
-- Surface an occasional lightweight profile check-in only when the recommendation confidence is stale or behavior has noticeably changed.
-- Preserve the warm visual language and add purposeful motion: smooth full-screen transitions, responsive button states, brief loading animation, and optional flip interactions for activity details.
-- Audit navigation so every button has one clear job, back/continue behavior is predictable, and primary flows do not depend on popup-card stacks.
-
-### Done when
-
-- Owners can correct an outdated pet profile in a few taps.
-- Recommendations adapt without repeated long forms or excessive copy.
-- Animations clarify progress and hierarchy without slowing down the task.
-- Play, care, completion, and profile-editing flows work consistently from start to finish.
-
+- Audit every visible screen for awkward grammar, spelling mistakes, inconsistent capitalization, and unnatural phrasing.
+- Make labels and instructions concise, warm, and easy to understand.
+- Increase color saturation across the existing palette so the app feels livelier and less dominated by cream and white.
+- Preserve the established design system, layouts, hierarchy, and interaction patterns; this is a color and copy polish pass, not a redesign.
+- Check contrast and legibility after adjusting colors, including locked, disabled, and secondary states.
