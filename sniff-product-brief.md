@@ -2,7 +2,7 @@
 
 **One tiny enrichment activity a day, for your dog or cat.**
 
-*Working name. Status: pre-build concept. Last updated: July 2026.*
+*Working name. Status: pre-build concept. Last updated: August 2026.*
 
 ---
 
@@ -163,14 +163,14 @@ Open → see today's one activity
         ↓
 Tap through → steps + why it works
         ↓
-Do it (2–10 min)
+Start guided session → timer + contextual encouragement
         ↓
-Mark done → optional photo → one-tap reaction
+Timer finishes → optional behavior capture + photo + one-tap reaction
         ↓
 Reaction feeds tomorrow's selection
 ```
 
-Total in-app time on a normal day: under 90 seconds. The activity happens away from the phone. This is deliberate — the app should get out of the way.
+The guided session should support the activity without demanding constant attention. Setup and completion should remain fast, while the timer gives the caretaker a clear beginning and end and produces reliable engagement-duration data.
 
 ### 6.2 Onboarding
 
@@ -179,11 +179,18 @@ Target completion: under three minutes. Every question must earn its place by ch
 | Step | Question | Why it's asked |
 |---|---|---|
 | 1 | Dog or cat | Forks the entire content library |
-| 2 | Name, age band, size band | Personalization; filters age/size-inappropriate activities |
-| 3 | Energy level (low / medium / high) | Sets baseline activity intensity |
-| 4 | Any limitations? (mobility, resource guarding, food allergies, senior, anxious) | Excludes unsuitable activities — safety-critical |
-| 5 | What do you have? (checklist: treats, kibble, peanut butter, towels, cardboard, muffin tin, lick mat, snuffle mat, puzzle toy, wand toy, etc.) | Constrains recommendations to what's achievable today |
-| 6 | When should we nudge you? | Sets the anchor time |
+| 2 | Name; optional breed/type scan | Establishes identity. Breed scanning is a later AI add-on and must never block setup or override the caretaker. |
+| 3 | Exact age and approximate weight | Derives age/size bands while giving safety and difficulty rules more useful inputs. Use forgiving sliders and explain the resulting category. |
+| 4 | Short behavior-based energy questionnaire | Derives low/medium/high from observable play initiation, stamina, and ability to settle instead of asking for a vague “vibe.” |
+| 5 | Any limitations? (mobility, resource guarding, food allergies, senior, anxious) | Excludes unsuitable activities — safety-critical |
+| 6 | What do you have? (searchable, categorized household items, treats, and species-specific toys) | Constrains recommendations to what's achievable today |
+| 7 | When should we nudge you? | Sets the anchor time |
+
+Age and weight controls should be understandable to caretakers who do not know a formal age or size band. Show an exact value, a changing pet-size illustration, and the category inferred by the system. Allow direct correction later from the pet profile.
+
+Keep onboarding concise even as the profile becomes richer. Prefer three well-worded behavioral questions over a long personality quiz. Persist the onboarding draft after every change so an app interruption, timeout, or restart never forces the caretaker to recreate a pet profile.
+
+The optional breed/type scan should launch a clearly labeled placeholder in early builds. A future implementation may suggest a breed or type from a photo, but must communicate uncertainty, permit correction, avoid health claims, and never make breed the primary recommendation signal.
 
 Multi-pet households create separate profiles. The daily card shows one pet at a time with a switcher; **do not** show two activities at once, that violates principle 1.
 
@@ -203,33 +210,53 @@ The "not today" swap should be generous — let people cycle three or four times
 
 ### 6.4 Activity detail
 
-- Title, category, duration, materials
-- **Why this works** — a short note on the instinct being satisfied. This is the most under-served content in the space and a real differentiator. Owners who understand *why* keep doing it.
-- Numbered steps, 3–6 of them, written for someone holding a phone in one hand
-- Visual: illustration or short looping clip
-- Safety note where relevant (supervision required, choking risk, not for resource guarders)
-- Primary action: **Mark done**
+- Keep browse cards visually led and deliberately brief: image, title, category, and duration. Do not place the full description, materials, rationale, and steps on the same card.
+- On touch devices, tapping the card can flip it to a concise description and one playful category icon before the user commits.
+- Replace the long scrolling detail page with a staged preparation flow: materials first, then one setup instruction per screen, then a clear ready state.
+- Each screen has one primary action (for example **Got it**, **Next**, or **Start playtime**) and uses directional transitions so progress feels continuous.
+- **Why this works** and safety guidance remain available, but should be delivered at the moment they are useful rather than as large text blocks before play.
+- Use illustration or lightweight motion to demonstrate each step. Favor a centered, one-handed layout and short copy over documentation-style pages.
 
-### 6.5 Completion
+### 6.5 Guided activity session
+
+Tapping **Start activity** opens a lightweight, interactive session built around the activity's expected duration.
+
+- Show a prominent countdown timer using the activity's recommended duration (for example, 3:00)
+- Provide clear pause, resume, finish early, and restart controls
+- Surface short, timed coaching prompts such as alternative ways to present the activity, what behavior to watch for, or a gentle suggestion to simplify or increase difficulty
+- Keep prompts encouraging, specific, and optional; they should never distract from supervising the pet
+- Clearly signal when the recommended duration is complete, without implying failure if the caretaker finishes early
+- Log actual elapsed play time so the product can report total minutes of enrichment and compare activity formats
+- Track setup and active pet-caretaker play as separate durations; the play timer begins only after the caretaker confirms setup is complete
+- Allow the caretaker to extend the session when the pet is still engaged
+- Design toward optional photo or short video capture during the session so observable behavior can be attached to the activity record; recording is a later-phase capability and must require clear consent and privacy controls
+
+The timer is not a productivity mechanic or a streak substitute. It is a shared activity aid, a natural endpoint, and a source of higher-quality engagement data.
+
+### 6.6 Completion and observation
 
 - Confirmation that doesn't over-celebrate. Warm, brief, no confetti.
 - Optional photo — one tap to camera. This drives the memory grid and is the strongest retention mechanic in the product.
-- One-tap reaction: **Loved it / Fine / Too hard / Not interested**. Four options, no free text required. This is the entire feedback loop for the recommendation engine.
+- One-tap reaction: **Loved it / Fine / Too hard / Not interested**. Four options, no free text required. This remains the primary explicit feedback signal for the recommendation engine.
+- Optional one-tap pet mood and behavior check-in. Keep the vocabulary small and observable (for example: engaged, excited, calm, tired, distracted, frustrated, or hungry) rather than asking the caretaker to diagnose the pet.
+- Where useful, capture context such as time of day, location, and weather automatically with permission. Always show what is being recorded and allow the caretaker to remove it.
 - Optional free-text note for people who want to journal it.
 
-### 6.6 Memory grid
+### 6.7 Memory grid and trends
 
 A scrapbook, not a dashboard. Chronological grid of completed sessions with photos where they exist and activity marks where they don't. Cumulative counts only — "37 activities, 24 photos" — never consecutive.
 
-Include a "most loved" summary derived from reactions. Include a monthly or yearly shareable summary; this is organic acquisition.
+Include total enrichment minutes alongside cumulative activities and photos. This is additive progress, not a quota: "126 minutes playing together" is useful; "14 minutes behind target" is not.
 
-### 6.7 Library
+Include a "most loved" summary derived from reactions. Over time, surface plain-language patterns in mood, behavior, time, activity type, and permitted contextual data—for example, "Luna tends to stay engaged longer with scent games in the morning." Treat these as observations, not veterinary conclusions. Include a monthly or yearly shareable summary; this is organic acquisition.
+
+### 6.8 Library
 
 Browsable and filterable by time available, category, and materials on hand. Saved favorites surface first. This exists for the days when the daily card doesn't fit the situation — raining, sick pet, guests over, five minutes before work.
 
 Filters that matter most: **time** and **what I have**. Category filtering is secondary.
 
-### 6.8 Notifications
+### 6.9 Notifications
 
 One per day, at the user's chosen anchor time, phrased as an invitation rather than an obligation. Never guilt-based. Never "you've missed 3 days."
 
@@ -237,12 +264,14 @@ Copy direction: *"Today for Luna: towel burrito. 3 minutes, needs a towel."* —
 
 If a user has been inactive for two weeks, one gentle re-engagement message, then stop. Do not escalate.
 
-### 6.9 Explicitly out of scope for v1
+### 6.10 Explicitly out of scope for v1
 
 - Social features, feeds, following other users
 - Community-submitted activities
 - Video-heavy content (see section 8)
 - Hardware integration
+- Automatic interpretation of recorded video or audio
+- Predictive recommendations based on population-level pet data
 - Vet or trainer marketplace
 - Multi-species beyond dog and cat
 - Web app
@@ -280,6 +309,20 @@ Rules-based, not ML. This is genuinely sufficient for v1 and much easier to debu
 
 **Cold start:** first seven days are a fixed, hand-designed sequence covering four categories at the easiest tier. This is a curated experience, not an algorithmic one. It should be the best week of content we have.
 
+### Longer-term: Fetch AI
+
+The rules engine establishes a safe and explainable baseline. As the product collects sufficient consented, high-quality session data, a later recommendation layer—working name **Fetch AI**—can learn from:
+
+- Actual time spent in each activity, including early finishes and extensions
+- Reactions and observed mood or behavior before, during, and after play
+- Pet attributes such as species, age band, size, energy level, and declared limitations
+- Time of day, season, and permissioned environmental context such as weather
+- Similar patterns across pets, using aggregated or de-identified data
+
+The goal is proactive relevance: recommend calming engagement when a pet is likely to be overstimulated, suggest more active play when engagement has fallen, or adapt food-based activities when recurring seasonal patterns appear. Recommendations must remain explainable ("suggested because Luna usually engages longer with scent games on cool mornings"), avoid medical claims, and provide controls to correct the underlying observation.
+
+Population-level learning requires explicit consent, strong privacy protections, minimum data-quality thresholds, bias monitoring, and expert review. Correlation—especially around weather, appetite, fatigue, and mood—must not be presented as causation or diagnosis.
+
 ---
 
 ## 8. Content strategy
@@ -309,6 +352,7 @@ duration_minutes, materials[] (with required/optional flags)
 description (one line, ~20 words)
 why_it_works (2 sentences, names the instinct)
 steps[] (3–6, imperative, one action each)
+coaching_prompts[] (timing, message, optional trigger)
 safety_notes[] (nullable)
 age_range, size_range, energy_match
 exclusions[] (resource_guarding, mobility_limited, etc.)
@@ -366,6 +410,17 @@ The intent is domestic and tactile — towels, cardboard, grass — rather than 
 
 Treat this as a starting point for a designer, not a final identity.
 
+The product should feel recognizably pet-centered rather than like stock platform UI. Use soft but lively color families, rounded and dynamic typography with high legibility, consistent animated icon behavior, pet portraits, centered transition moments, and tactile response to selection. Avoid long left-aligned text pages when the same information can be sequenced into a guided interaction.
+
+### Play inventory and context controls
+
+- Organize available materials into color-coded groups such as household items, pet-specific toys, food/treat tools, and safe miscellaneous objects
+- Provide a search field and enough options to reflect what people actually have at home
+- Material selection tiles should use consistent icons, selected states, motion, and haptic response
+- Replace single-choice mood sorting with multi-select observable context. Include pet-specific behaviors plus optional circumstances such as temperature, weather, meals, guests, time outdoors, or a new toy
+- Make labels species-aware (a cat being ready to pounce is different from a dog being tail-wag playful)
+- Treat every selection as a clue rather than a diagnosis; combine clues to rank activity categories and retain useful context for later trend analysis
+
 ---
 
 ## 10. Technical architecture
@@ -393,7 +448,9 @@ pets         → id, user_id, species, name, age_band, size_band,
                 energy_level, limitations[], materials[]
 activities    → (content library, see section 8 schema)
 sessions      → id, pet_id, activity_id, completed_at,
-                reaction, photo_url, note
+                planned_duration_seconds, elapsed_seconds, reaction,
+                mood_tags[], behavior_tags[], photo_url, recording_url,
+                note, context_snapshot, recording_consent
 recommendations → id, pet_id, activity_id, served_at, outcome
 ```
 
@@ -409,6 +466,8 @@ recommendations → id, pet_id, activity_id, served_at, outcome
 1. **Photo upload reliability.** It's the retention mechanic. It must never fail silently.
 2. **Notification delivery.** A daily-prompt product where the prompt doesn't arrive is dead. Test aggressively across OS versions and battery-optimization settings.
 3. **Content pipeline.** Non-engineers need to author, review, and publish activities without a developer. Build a simple CMS (or use an off-the-shelf headless CMS) in week one, not month six.
+4. **Timer and session-state reliability.** Pausing, backgrounding the app, interruptions, and device sleep must not corrupt elapsed-time data or cause a session to disappear.
+5. **Sensitive media and observation data.** Any behavior recording or contextual tracking needs explicit consent, clear retention/deletion controls, secure storage, and a credible privacy model before launch.
 
 ---
 
@@ -527,7 +586,10 @@ This is the single highest-value experiment available. If daily manual delivery 
 |---|---|---|
 | D7 / D30 / D90 retention | The whole thesis | D30 > 40% is a real signal |
 | Activities completed per active week | Is the loop working | > 3 |
+| Enrichment minutes per active week | Depth of real-world engagement | Establish baseline in beta |
+| Guided-session completion rate | Whether the timer helps users finish | Establish baseline in beta |
 | Photo attach rate | Emotional engagement proxy | > 30% of completions |
+| Mood/behavior check-in rate | Whether observation data is usable | Establish baseline in beta |
 | Swap rate ("not today") | Recommendation quality | < 25% |
 | Free → paid conversion | Business viability | > 5% |
 | Shelter code activation rate | Channel viability | > 20% |
@@ -542,6 +604,14 @@ Track **cumulative activities per user**, never streaks — internally as well a
 - Does the daily-prompt model retain, or does it decay like every other habit app? (The concierge test answers this.)
 - Is one activity a day the right cadence, or should it be 3–4 per week? Some enrichment educators suggest daily; some suggest variety over frequency.
 - Do multi-pet households want one activity per pet per day, or one household activity? This meaningfully affects the core loop.
+- Does the guided timer increase completion and play duration, or does having the phone present make the interaction feel less natural?
+- Which mood and behavior labels can caretakers apply consistently without encouraging anthropomorphism or pseudo-diagnosis?
+- When, if ever, should in-session recording ship, and is its predictive value worth the privacy and storage cost?
+
+**Design / usability**
+- Refine the bottom navigation icons and bar so labels, active state, and tap targets are immediately clear.
+- Remove or redesign the confusing top-left menu control in the Play experience. The primary activity flow should not compete with global navigation.
+- Prototype the timer at multiple activity lengths and test one-handed use, interruptions, accessibility, and whether coaching prompts feel helpful rather than intrusive.
 
 **Content**
 - How fast do users exhaust 200 activities? Directly determines content spend.
@@ -558,6 +628,8 @@ Track **cumulative activities per user**, never streaks — internally as well a
 **Ethical / safety**
 - Every activity must be safety-reviewed. Supervision requirements, choking hazards, resource-guarding contraindications, and food-allergy considerations need to be explicit in the content schema and surfaced in the UI.
 - The product must never present itself as veterinary or behavioral advice. Behavior problems that appear in onboarding should route toward professional consultation, not just toward more enrichment.
+- Mood, behavior, environmental context, and recordings are sensitive pet-and-household data. Collection must be optional and transparent, with export and deletion controls.
+- Predictive insights must distinguish observations from hypotheses, avoid claiming that weather or another context caused a behavior, and escalate concerning appetite, fatigue, or behavior changes to appropriate professional guidance.
 
 ---
 

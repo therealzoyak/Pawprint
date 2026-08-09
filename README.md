@@ -1,4 +1,23 @@
-# Sniff MVP
+# Pawprint
+
+Pawprint (originally developed under the working name Sniff) includes two local implementations, kept side by side:
+
+- `Sniff.xcodeproj`: the native iOS 17+ SwiftUI milestone 0/1 application
+- `index.html` and `sniff-prototype.html`: the original dependency-free web MVP and design prototype
+
+## Native iOS app
+
+Open `Sniff.xcodeproj` in Xcode 16 or newer, select an iOS 17+ simulator, and run the `Sniff` scheme. The app uses SwiftData locally and has no network, account, payment, or backend dependency.
+
+The native slice includes dog/cat onboarding, multi-pet switching, a typed reviewed seed catalog, hard safety and materials filtering, explainable preference-aware daily recommendations, full instructions, four completion reactions, optional photo selection, favorites, a filterable safe library, a cumulative memory scrapbook with pet-centered observed preferences, and Fetch, a pet-aware copilot experience that answers quick enrichment questions using local profile, mood, history, and reviewed activity data. Fetch currently runs locally with deterministic responses and is ready to be connected to a hosted language model when a backend and privacy policy are in place. Unit tests cover catalog decoding, safety filtering, reaction effects, rotation, recent avoidance, calming bias, swap state, pet isolation, filters, and safe recommendation output.
+
+Run tests from Xcode or with:
+
+```sh
+xcodebuild test -project Sniff.xcodeproj -scheme Sniff -destination 'platform=iOS Simulator,name=iPhone 16'
+```
+
+## Web MVP
 
 Sniff gives a pet owner one short, suitable enrichment activity each day. This dependency-free web MVP is based on the accompanying product brief and design prototype.
 
