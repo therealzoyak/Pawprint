@@ -465,7 +465,7 @@ struct MainTabView: View {
                 ZStack {
                     Group {
                         switch section {
-                        case .play: NavigationStack { TodayView(pet: pet, availablePets: accountPets).toolbar { petToolbar(pet) } }
+                        case .play: NavigationStack { TodayView(pet: pet, availablePets: accountPets, openCare: { section = .care }).toolbar { petToolbar(pet) } }
                         case .fetch: NavigationStack { FetchView(pet: pet).toolbar { petToolbar(pet) } }
                         case .care: NavigationStack { CareView(pet: pet).toolbar { petToolbar(pet) } }
                         }
@@ -487,6 +487,10 @@ struct MainTabView: View {
                     Button { selectedPetID = pet.id.uuidString } label: {
                         Label(pet.name, systemImage: pet.id == current.id ? "checkmark.circle.fill" : (pet.species == .cat ? "cat.fill" : "dog.fill"))
                     }
+                }
+                Divider()
+                Button { addingPet = true } label: {
+                    Label("Add pet", systemImage: "plus.circle.fill")
                 }
             } label: {
                 HStack(spacing: 7) {
@@ -790,12 +794,15 @@ struct PetTabIcon: View {
 struct TodayView: View {
     let pet: PetProfile
     let availablePets: [PetProfile]
+    let openCare: () -> Void
     @Query(sort: \EnrichmentSession.completedAt, order: .reverse) private var sessions: [EnrichmentSession]
     @Query private var favoriteRecords: [FavoriteActivity]
     @Query(sort: \EngagementEntry.recordedAt, order: .reverse) private var engagementEntries: [EngagementEntry]
     @Query(sort: \CareTask.createdAt, order: .reverse) private var careTasks: [CareTask]
     @State private var showingPlaySheet = false
     @State private var editingProfile = false
+    @State private var showingProgress = false
+    @State private var showingBadges = false
     private let library = try? ActivityLibrary()
     private var activity: Activity? {
         return library?.recommendation(for: pet, history: ActivityLibrary.history(for: pet, sessions: sessions), favorites: Set(petFavorites.map(\.activityID)))
@@ -819,9 +826,7 @@ struct TodayView: View {
                     petBlock
                     if shouldSuggestProfileCheckIn { profileCheckIn }
                     playBlock
-                    careBlock
-                    progressBlock
-                    achievementsBlock
+                    quickWidgets
                 }
                 .padding()
             }
@@ -832,19 +837,27 @@ struct TodayView: View {
             PlayTimeSheet(pet: pet, availablePets: availablePets, activities: moreIdeas)
         }
         .sheet(isPresented: $editingProfile) { PetProfileEditorView(pet: pet) }
+        .sheet(isPresented: $showingProgress) { progressDetail }
+        .sheet(isPresented: $showingBadges) { badgeLibrary }
     }
     private var petBlock: some View {
-        HStack(spacing: 14) {
-            PetAvatar(pet: pet, size: 72)
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 12) {
+            PetAvatar(pet: pet, size: 92)
+            VStack(spacing: 3) {
                 Text(pet.name).font(.system(size: 30, weight: .bold, design: .rounded))
-                Text("\(petSessions.count) plays · \(totalMinutes) minutes").font(.subheadline.bold()).foregroundStyle(Color.sniffMuted)
+                Text("\(petSessions.count) plays together").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
             }
-            Spacer()
-            Button { editingProfile = true } label: {
-                Image(systemName: "slider.horizontal.3").font(.headline).foregroundStyle(Color.sniffPurple)
-                    .frame(width: 42, height: 42).background(Color.sniffLavender, in: Circle())
-            }.buttonStyle(.plain).accessibilityLabel("Update \(pet.name)’s profile")
+            Button { showingProgress = true } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: "clock.fill").foregroundStyle(Color.sniffMango)
+                    Text("\(recentMinutes) min this week").font(.subheadline.bold())
+                    Spacer()
+                    playMixBar.frame(width: 112, height: 8)
+                    Image(systemName: "chevron.right").font(.caption2.bold()).foregroundStyle(Color.sniffPurple)
+                }
+                .foregroundStyle(Color.sniffInk).padding(.horizontal, 12).padding(.vertical, 9)
+                .background(Color.sniffLavender.opacity(0.5), in: Capsule())
+            }.buttonStyle(.plain).accessibilityHint("Shows weekly progress and badges")
         }.padding(18).background(.white.opacity(0.94), in: RoundedRectangle(cornerRadius: 28))
             .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.sniffPurple.opacity(0.12)) }
     }
@@ -868,73 +881,124 @@ struct TodayView: View {
     }
     private var playBlock: some View {
         Button { showingPlaySheet = true } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "pawprint.fill").font(.title2.bold()).foregroundStyle(Color.sniffAqua)
-                    .frame(width: 50, height: 50).background(Color.sniffButter, in: RoundedRectangle(cornerRadius: 17))
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Play with \(pet.name)").font(.system(.title2, design: .rounded, weight: .bold))
-                    Text("We’ll pick the activity").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
+            VStack(spacing: 10) {
+                Image(systemName: "pawprint.fill").font(.title.bold()).foregroundStyle(Color.sniffPurple)
+                    .frame(width: 56, height: 56).background(Color.sniffButter, in: RoundedRectangle(cornerRadius: 19))
+                Text("Play with \(pet.name)").font(.system(.title2, design: .rounded, weight: .heavy))
+                HStack(spacing: 6) {
+                    Text("Start a moment together")
+                    Image(systemName: "arrow.right.circle.fill")
+                }.font(.subheadline.bold()).foregroundStyle(.white.opacity(0.86))
+            }.frame(maxWidth: .infinity).foregroundStyle(.white).padding(20).contentShape(Rectangle())
+        }.buttonStyle(.plain)
+            .background(LinearGradient(colors: [.sniffPurple, .sniffBerry], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 28))
+            .shadow(color: Color.sniffPurple.opacity(0.28), radius: 16, y: 8)
+    }
+    private var quickWidgets: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Button(action: openCare) {
+                VStack(alignment: .center, spacing: 10) {
+                    Image(systemName: "checklist").font(.title3.bold()).foregroundStyle(Color.sniffGold)
+                        .frame(width: 38, height: 38).background(Color.sniffButter.opacity(0.75), in: Circle())
+                    Text("Care").font(.headline).frame(maxWidth: .infinity)
+                    Text(careWidgetText).font(.caption).foregroundStyle(Color.sniffMuted).multilineTextAlignment(.center).lineLimit(2, reservesSpace: true)
+                    Spacer(minLength: 0)
+                    Text(dueCareTasks.isEmpty ? "All set" : "View reminder").font(.caption2.bold()).foregroundStyle(Color.sniffGold)
                 }
-                Spacer(); Image(systemName: "arrow.up.right.circle.fill").font(.title).foregroundStyle(Color.sniffAqua)
-            }.foregroundStyle(Color.sniffInk).padding(18).contentShape(Rectangle())
-        }.buttonStyle(.plain).background(.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 28))
-            .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.sniffAqua.opacity(0.22), lineWidth: 1.5) }
-    }
-    private var careBlock: some View {
-        let openItems = careTasks.filter { $0.petID == pet.id && $0.isDue }
-        return HStack(spacing: 12) {
-            Image(systemName: "cross.case.fill").foregroundStyle(Color.sniffGold)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Routine care").font(.headline)
-                Text(openItems.isEmpty ? "All settled for now" : "\(openItems.count) gentle \(openItems.count == 1 ? "reminder" : "reminders") in Care")
-                    .font(.caption).foregroundStyle(Color.sniffMuted)
-            }
-            Spacer(); Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.sniffMint)
-        }.padding(15).background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: 22))
-            .overlay { RoundedRectangle(cornerRadius: 22).stroke(Color.sniffGold.opacity(0.16)) }
-    }
-    private var progressBlock: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("This week, you spent \(recentMinutes) minutes playing with \(pet.name).").font(.system(.title2, design: .rounded, weight: .bold))
-            Label(careBadge, systemImage: "heart.circle.fill").font(.caption.bold()).foregroundStyle(Color.sniffAqua)
-            HStack(alignment: .bottom, spacing: 9) {
-                ForEach(Array(weeklyMinutes.enumerated()), id: \.offset) { index, minutes in
-                    VStack(spacing: 6) {
-                        RoundedRectangle(cornerRadius: 7).fill(LinearGradient(colors: [.sniffPurple, .sniffBerry], startPoint: .bottom, endPoint: .top))
-                            .frame(height: max(10, CGFloat(minutes) / CGFloat(max(weeklyMinutes.max() ?? 1, 1)) * 74))
-                        Text(dayLabels[index]).font(.caption2.bold()).foregroundStyle(Color.sniffMuted)
-                    }.frame(maxWidth: .infinity, alignment: .bottom)
+                .frame(maxWidth: .infinity, minHeight: 132, alignment: .top).padding(15).contentShape(Rectangle())
+            }.buttonStyle(.plain).frame(maxWidth: .infinity).background(.white.opacity(0.94), in: RoundedRectangle(cornerRadius: 22))
+                .overlay { RoundedRectangle(cornerRadius: 22).stroke(Color.sniffGold.opacity(0.16)) }
+
+            Button { showingBadges = true } label: {
+                VStack(alignment: .center, spacing: 10) {
+                    ZStack {
+                        Circle().fill(LinearGradient(colors: [.sniffMango, .sniffPink], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        Image(systemName: badgeWidgetTrack.symbol).font(.title3.bold()).foregroundStyle(.white)
+                    }.frame(width: 46, height: 46).shadow(color: Color.sniffPink.opacity(0.22), radius: 7, y: 4)
+                    Text("Badges").font(.headline).frame(maxWidth: .infinity)
+                    Text(badgeWidgetTrack.earnedLevel ?? badgeWidgetTrack.nextLevel ?? "Keep playing together")
+                        .font(.caption).foregroundStyle(Color.sniffMuted).multilineTextAlignment(.center).lineLimit(2, reservesSpace: true)
+                    Spacer(minLength: 0)
+                    Text("Open collection").font(.caption2.bold()).foregroundStyle(Color.sniffBerry)
                 }
-            }.frame(height: 102, alignment: .bottom)
-            HStack(spacing: 12) {
-                metricTile(value: "\(recentMinutes)", label: "min this week", icon: "clock.fill", color: .sniffMango)
-                metricTile(value: engagementLabel, label: "engagement", icon: "heart.fill", color: .sniffBerry)
-            }
-        }.padding(18).background(.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 28))
-            .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.sniffBerry.opacity(0.16)) }
+                .frame(maxWidth: .infinity, minHeight: 132, alignment: .top).padding(15).contentShape(Rectangle())
+            }.buttonStyle(.plain).frame(maxWidth: .infinity).background(LinearGradient(colors: [.white, Color.sniffPeach.opacity(0.42)], startPoint: .top, endPoint: .bottom), in: RoundedRectangle(cornerRadius: 22))
+                .overlay { RoundedRectangle(cornerRadius: 22).stroke(Color.sniffPurple.opacity(0.14)) }
+        }
     }
-    private var achievementsBlock: some View {
-        let tracks = AchievementEngine.tracks(history: ActivityLibrary.history(for: pet, sessions: sessions))
-        return VStack(alignment: .leading, spacing: 14) {
-            Text("Badges").font(.system(.title2, design: .rounded, weight: .bold))
-            Text("Good weeks stay earned. Missing a day never takes anything away.").font(.caption).foregroundStyle(Color.sniffMuted)
-            ForEach(tracks) { track in
-                HStack(spacing: 13) {
-                    Image(systemName: track.symbol).font(.title2.bold()).foregroundStyle(track.earnedLevel == nil ? Color.sniffMuted : Color.sniffPurple)
-                        .frame(width: 46, height: 46).background((track.earnedLevel == nil ? Color.sniffLine : Color.sniffLavender), in: Circle())
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(track.earnedLevel ?? track.title).font(.headline)
-                        if let next = track.nextLevel {
-                            Text("Next: \(next) · \(badgeProgress(track))").font(.caption).foregroundStyle(Color.sniffMuted)
-                            ProgressView(value: track.progress).tint(.sniffPurple)
-                        } else { Text("All levels earned").font(.caption.bold()).foregroundStyle(Color.sniffMint) }
+    private var progressDetail: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("\(recentMinutes) minutes with \(pet.name) this week").font(.system(.title2, design: .rounded, weight: .bold))
+                        Label(careBadge, systemImage: "heart.circle.fill").font(.caption.bold()).foregroundStyle(Color.sniffAqua)
+                        HStack(alignment: .bottom, spacing: 9) {
+                            ForEach(Array(weeklyMinutes.enumerated()), id: \.offset) { index, minutes in
+                                VStack(spacing: 6) {
+                                    RoundedRectangle(cornerRadius: 7).fill(LinearGradient(colors: [.sniffPurple, .sniffBerry], startPoint: .bottom, endPoint: .top))
+                                        .frame(height: max(10, CGFloat(minutes) / CGFloat(max(weeklyMinutes.max() ?? 1, 1)) * 74))
+                                    Text(dayLabels[index]).font(.caption2.bold()).foregroundStyle(Color.sniffMuted)
+                                }.frame(maxWidth: .infinity, alignment: .bottom)
+                            }
+                        }.frame(height: 102, alignment: .bottom)
+                        HStack(spacing: 12) {
+                            metricTile(value: "\(recentMinutes)", label: "min this week", icon: "clock.fill", color: .sniffMango)
+                            metricTile(value: engagementLabel, label: "engagement", icon: "heart.fill", color: .sniffBerry)
+                        }
+                    }.padding(18).background(.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 28))
+                    playMixDetail
+                    playInsights
+                    Button { showingProgress = false; editingProfile = true } label: {
+                        Label("Update \(pet.name)’s profile", systemImage: "slider.horizontal.3")
+                    }.buttonStyle(.bordered).tint(.sniffPurple)
+                }.padding()
+            }
+            .background(Color.sniffPaper)
+            .navigationTitle("Progress")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showingProgress = false } } }
+        }
+    }
+    private var badgeLibrary: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(pet.name)’s badge book").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        Text("Little celebrations for showing up together.").foregroundStyle(Color.sniffMuted)
                     }
-                    Spacer()
-                    if track.earnedLevel != nil { Image(systemName: "checkmark.seal.fill").foregroundStyle(Color.sniffMint) }
-                }.padding(13).background(Color.white.opacity(0.76), in: RoundedRectangle(cornerRadius: 20))
+                    LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 13) {
+                        ForEach(Array(badgeTracks.enumerated()), id: \.element.id) { index, track in
+                            badgeTile(track, index: index)
+                        }
+                    }
+                }.padding()
             }
-        }.padding(18).background(LinearGradient(colors: [Color.sniffLavender.opacity(0.72), Color.sniffPeach.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
-            .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.sniffPurple.opacity(0.12)) }
+            .background(LinearGradient(colors: [Color.sniffPaper, Color.sniffLavender.opacity(0.45), Color.sniffPeach.opacity(0.35)], startPoint: .top, endPoint: .bottom))
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showingBadges = false } } }
+        }
+    }
+    private func badgeTile(_ track: AchievementTrack, index: Int) -> some View {
+        let colors: [(Color, Color)] = [(.sniffMango, .sniffPink), (.sniffAqua, .sniffSky), (.sniffPurple, .sniffBerry), (.sniffCoral, .sniffMango), (.sniffPink, .sniffPurple), (.sniffMint, .sniffAqua)]
+        let pair = colors[index % colors.count]
+        let earned = track.earnedLevel != nil
+        return VStack(spacing: 10) {
+            ZStack {
+                Circle().fill(LinearGradient(colors: earned ? [pair.0, pair.1] : [Color.sniffLine, Color.sniffLine.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                Circle().stroke(.white.opacity(0.7), lineWidth: 3).padding(6)
+                Image(systemName: track.symbol).font(.system(size: 28, weight: .bold)).foregroundStyle(.white)
+            }.frame(width: 78, height: 78).shadow(color: earned ? pair.0.opacity(0.25) : .clear, radius: 9, y: 5)
+            Text(track.earnedLevel ?? track.nextLevel ?? track.title).font(.subheadline.bold()).multilineTextAlignment(.center).lineLimit(2, reservesSpace: true)
+            if earned {
+                Label("Earned", systemImage: "sparkles").font(.caption2.bold()).foregroundStyle(pair.1)
+            } else {
+                ProgressView(value: track.progress).tint(pair.0)
+                Text(badgeProgress(track)).font(.caption2).foregroundStyle(Color.sniffMuted)
+            }
+        }.frame(maxWidth: .infinity, minHeight: 170).padding(14)
+            .background(.white.opacity(0.88), in: RoundedRectangle(cornerRadius: 26))
+            .overlay { RoundedRectangle(cornerRadius: 26).stroke(pair.0.opacity(earned ? 0.28 : 0.1)) }
     }
     private func badgeProgress(_ track: AchievementTrack) -> String {
         switch track.id {
@@ -943,6 +1007,63 @@ struct TodayView: View {
         case "explorer": "\(track.current)/\(track.target) styles"
         default: "\(track.current)/\(track.target)"
         }
+    }
+    private var playMixBar: some View {
+        GeometryReader { geometry in
+            let values = playCategoryMinutes.filter { $0.value > 0 }
+            let total = max(values.reduce(0) { $0 + $1.value }, 1)
+            if values.isEmpty {
+                Capsule().fill(Color.sniffLine)
+            } else {
+                HStack(spacing: 2) {
+                    ForEach(ActivityCategory.allCases.filter { playCategoryMinutes[$0, default: 0] > 0 }) { category in
+                        Capsule().fill(category.accent)
+                            .frame(width: max(5, (geometry.size.width - CGFloat(values.count - 1) * 2) * CGFloat(playCategoryMinutes[category, default: 0]) / CGFloat(total)))
+                    }
+                }
+            }
+        }.clipShape(Capsule()).accessibilityLabel("Weekly play mix by activity type")
+    }
+    private var playMixDetail: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Play mix").font(.system(.title2, design: .rounded, weight: .bold))
+            Text("How your time together breaks down this week.").font(.caption).foregroundStyle(Color.sniffMuted)
+            playMixBar.frame(height: 14)
+            if playCategoryMinutes.values.allSatisfy({ $0 == 0 }) {
+                Label("Complete a play moment to start seeing \(pet.name)’s mix.", systemImage: "paintpalette.fill")
+                    .font(.subheadline).foregroundStyle(Color.sniffMuted).padding(.vertical, 6)
+            } else {
+                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], alignment: .leading, spacing: 10) {
+                    ForEach(ActivityCategory.allCases.filter { playCategoryMinutes[$0, default: 0] > 0 }) { category in
+                        HStack(spacing: 7) {
+                            Circle().fill(category.accent).frame(width: 10, height: 10)
+                            Text(category.funLabel).font(.caption.bold())
+                            Spacer()
+                            Text("\(playCategoryMinutes[category, default: 0])m").font(.caption).foregroundStyle(Color.sniffMuted)
+                        }
+                    }
+                }
+            }
+        }.padding(18).background(.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 28))
+            .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.sniffAqua.opacity(0.14)) }
+    }
+    private var playInsights: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("What we’re learning", systemImage: "lightbulb.fill").font(.system(.title3, design: .rounded, weight: .bold)).foregroundStyle(Color.sniffMango)
+            if petSessions.count < 3 {
+                Text("A few more play moments will help us spot what keeps \(pet.name) engaged and what they’d rather skip.")
+                    .font(.subheadline).foregroundStyle(Color.sniffMuted)
+                HStack(spacing: 7) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle().fill(index < petSessions.count ? Color.sniffMango : Color.sniffLine).frame(width: 9, height: 9)
+                    }
+                    Text("\(petSessions.count) of 3 moments logged").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
+                }
+            } else {
+                Label(playSuccessTip, systemImage: "heart.fill").font(.subheadline).foregroundStyle(Color.sniffInk)
+                Label(playAdjustmentTip, systemImage: "arrow.triangle.2.circlepath").font(.subheadline).foregroundStyle(Color.sniffInk)
+            }
+        }.padding(18).background(LinearGradient(colors: [Color.sniffButter.opacity(0.72), Color.sniffPeach.opacity(0.45)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
     }
     private func metricTile(value: String, label: String, icon: String, color: Color) -> some View {
         HStack(spacing: 9) {
@@ -959,8 +1080,36 @@ struct TodayView: View {
             }
         }
     }
+    private var recentWeekSessions: [EnrichmentSession] {
+        let cutoff = calendar.date(byAdding: .day, value: -7, to: .now) ?? .now
+        return petSessions.filter { $0.completedAt >= cutoff }
+    }
+    private var playCategoryMinutes: [ActivityCategory: Int] {
+        Dictionary(grouping: recentWeekSessions, by: \.category).mapValues { $0.reduce(0) { $0 + $1.actualMinutes } }
+    }
+    private var playSuccessTip: String {
+        let loved = petSessions.filter { $0.reaction == .loved }
+        guard let favorite = Dictionary(grouping: loved, by: \.category).max(by: { $0.value.count < $1.value.count })?.key else {
+            return "Keep varying the play style while we learn what clicks."
+        }
+        return "\(favorite.funLabel) is getting \(pet.name)’s happiest reactions."
+    }
+    private var playAdjustmentTip: String {
+        let misses = petSessions.filter { $0.reaction == .notInterested || $0.reaction == .tooHard }
+        guard let category = Dictionary(grouping: misses, by: \.category).max(by: { $0.value.count < $1.value.count })?.key else {
+            return "No strong dislikes yet—short, varied sessions are working well."
+        }
+        return "Try shorter or gentler \(category.funLabel.lowercased()) sessions next time."
+    }
     private var dayLabels: [String] { (0..<7).reversed().map { offset in let date = calendar.date(byAdding: .day, value: -offset, to: .now) ?? .now; return String(calendar.shortWeekdaySymbols[calendar.component(.weekday, from: date) - 1].prefix(1)) } }
     private var recentMinutes: Int { weeklyMinutes.reduce(0, +) }
+    private var dueCareTasks: [CareTask] { careTasks.filter { $0.petID == pet.id && $0.isDue } }
+    private var careWidgetText: String {
+        guard let task = dueCareTasks.first else { return "No reminders right now" }
+        return dueCareTasks.count == 1 ? task.title : "\(task.title) + \(dueCareTasks.count - 1) more"
+    }
+    private var badgeTracks: [AchievementTrack] { AchievementEngine.tracks(history: ActivityLibrary.history(for: pet, sessions: sessions)) }
+    private var badgeWidgetTrack: AchievementTrack { badgeTracks.first { $0.nextLevel != nil } ?? badgeTracks[0] }
     private var careBadge: String { petSessions.count >= 10 ? "Enrichment champion" : petSessions.count >= 3 ? "Thoughtful play partner" : petSessions.isEmpty ? "Ready for your first play" : "Great start" }
     private var engagementLabel: String {
         let recent = petEngagement.prefix(7)
