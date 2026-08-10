@@ -7,10 +7,15 @@ struct RootView: View {
     @Query(sort: \PetProfile.createdAt) private var pets: [PetProfile]
     var showPersistenceWarning = false
     @State private var showingLaunchSurface = true
+    @State private var finishingOnboarding = false
     var body: some View {
         ZStack {
             Color.sniffPaper.ignoresSafeArea()
-            if pets.isEmpty { WelcomeView(ownerUID: "local").transition(routeTransition) }
+            if pets.isEmpty || finishingOnboarding {
+                WelcomeView(ownerUID: "local", onWillComplete: { finishingOnboarding = true }) {
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) { finishingOnboarding = false }
+                }.transition(routeTransition)
+            }
             else { MainTabView(ownerUID: nil).transition(routeTransition) }
             if showingLaunchSurface { LaunchSurface().transition(.opacity) }
         }
@@ -79,6 +84,8 @@ struct FancyField: View {
 
 struct WelcomeView: View {
     let ownerUID: String
+    var onWillComplete: () -> Void = {}
+    var onCompleted: () -> Void = {}
     @State private var onboarding = false
     var body: some View {
         ZStack {
@@ -100,13 +107,17 @@ struct WelcomeView: View {
                 Button("Set up their profile") { onboarding = true }.buttonStyle(PrimaryButtonStyle())
                 Spacer()
             }.padding(28)
-        }.fullScreenCover(isPresented: $onboarding) { OnboardingView(ownerUID: ownerUID) }
+        }.fullScreenCover(isPresented: $onboarding) {
+            OnboardingView(ownerUID: ownerUID, onWillComplete: onWillComplete, onCompleted: onCompleted)
+        }
     }
 }
 
 struct OnboardingView: View {
     var accountID: UUID? = nil
     var ownerUID: String? = nil
+    var onWillComplete: () -> Void = {}
+    var onCompleted: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @AppStorage("petDraft.step") private var step = 0
@@ -140,6 +151,8 @@ struct OnboardingView: View {
     @State private var materials: Set<Material> = [.towel, .cardboard]
     @State private var dayPeriods: Set<DayPeriod> = []
     @State private var scanningBreed = false
+    @State private var isSaving = false
+    @State private var saveError: String?
     private var species: Species { Species(rawValue: speciesRaw) ?? .dog }
     private var totalSteps: Int { 9 }
 
@@ -169,6 +182,9 @@ struct OnboardingView: View {
                 .onChange(of: materials) { _, value in materialsDraft = value.map(\.rawValue).sorted().joined(separator: ",") }
                 .onChange(of: dayPeriods) { _, value in dayPeriodsDraft = value.map(\.rawValue).sorted().joined(separator: ",") }
                 .sheet(isPresented: $scanningBreed) { BreedScanOnboardingPlaceholder(species: species) }
+                .alert("Couldn’t finish setup", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
+                    Button("Try again") { saveError = nil }
+                } message: { Text(saveError ?? "Please try again.") }
         }
     }
 
@@ -204,13 +220,13 @@ struct OnboardingView: View {
             VStack {
                 Button(action: advance) {
                     HStack {
-                        Text(step == totalSteps - 1 ? "Find today’s activity" : "Continue")
+                        Text(step == totalSteps - 1 ? (isSaving ? "Finding a great fit…" : "Find today’s activity") : "Continue")
                         Spacer()
-                        Image(systemName: "arrow.right")
+                        if isSaving { ProgressView().tint(.white) } else { Image(systemName: "arrow.right") }
                     }
                 }
                 .buttonStyle(PrimaryButtonStyle())
-                .disabled(step == 1 && name.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(isSaving || (step == 1 && name.trimmingCharacters(in: .whitespaces).isEmpty))
             }
             .padding(.horizontal, 24).padding(.vertical, 16)
             .background(.white.opacity(0.96))
@@ -371,6 +387,8 @@ struct OnboardingView: View {
     private func advance() {
         if step < totalSteps - 1 { withAnimation { step += 1 } }
         else {
+            isSaving = true
+            onWillComplete()
             let pet = PetProfile(name: name.trimmingCharacters(in: .whitespaces), species: species, age: ageBand, size: sizeBand, energy: energyLevel, exactAgeYears: ageYears, weightPounds: weightPounds, limitations: limitations, materials: materials, accountID: accountID, ownerUID: ownerUID)
             pet.preferredDayPeriodRaws = dayPeriods.map(\.rawValue).sorted(); pet.foodMotivationRaw = foodMotivationRaw
             pet.socialStyleRaw = socialStyleRaw; pet.noiseSensitive = noiseSensitive; modelContext.insert(pet)
@@ -379,7 +397,20 @@ struct OnboardingView: View {
             pet.hasSnacks = hasSnacks; pet.snacksPerDay = hasSnacks ? snacksPerDay : 0; pet.snackKinds = hasSnacks ? snackKinds.trimmingCharacters(in: .whitespacesAndNewlines) : ""
             pet.hoursAloneDaily = hoursAloneDaily; pet.livingStyleRaw = livingStyleRaw
             pet.dailyPlayGoalMinutes = dailyPlayGoalMinutes
-            try? modelContext.save(); clearDraft(); dismiss()
+            do {
+                try modelContext.save()
+                clearDraft()
+                dismiss()
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(350))
+                    onCompleted()
+                }
+            } catch {
+                modelContext.delete(pet)
+                isSaving = false
+                onCompleted()
+                saveError = "Your answers are still here. Pawprint couldn’t save the profile yet."
+            }
         }
     }
     private func goBack() {

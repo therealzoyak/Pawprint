@@ -100,6 +100,11 @@ struct ActivityLibrary {
                 value += max(28, 64 - moodPriority * 8)
             }
             if let maximumMinutes { value -= abs(activity.durationMinutes - maximumMinutes) * 3 }
+            else {
+                let playedToday = history.filter { calendar.isDate($0.date, inSameDayAs: day) }.reduce(0) { $0 + max(0, $1.actualDurationSeconds / 60) }
+                let usefulRemainingGoal = min(30, max(3, pet.dailyPlayGoalMinutes - playedToday))
+                value -= abs(activity.durationMinutes - usefulRemainingGoal) * 2
+            }
             let profileWords = "\(pet.temperamentNote) \(pet.sensitivityNote) \(pet.healthContextNote) \(pet.currentSituationNote)".lowercased()
             let expressedPreferences: [(ActivityCategory, [String])] = [
                 (.calming, ["calm", "settle", "anxious", "nervous", "gentle", "quiet", "tired"]),

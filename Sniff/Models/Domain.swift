@@ -249,7 +249,7 @@ enum PlayIntent: String, CaseIterable, Identifiable {
         case (.cat, .curious): "Curious"
         case (.cat, .playful): "Playful"
         case (.cat, .hungry): "Hungry"
-        case (.cat, .seekingAttention): "Bothering me"
+        case (.cat, .seekingAttention): "Checking in with me"
         case (.cat, .quietlyInterested): "Secretly game"
         case (.dog, .resting): "Taking it easy"
         case (.dog, .curious): "Sniffy"
