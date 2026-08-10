@@ -100,6 +100,23 @@ struct ActivityLibrary {
                 value += max(28, 64 - moodPriority * 8)
             }
             if let maximumMinutes { value -= abs(activity.durationMinutes - maximumMinutes) * 3 }
+            let profileWords = "\(pet.temperamentNote) \(pet.sensitivityNote) \(pet.healthContextNote) \(pet.currentSituationNote)".lowercased()
+            let expressedPreferences: [(ActivityCategory, [String])] = [
+                (.calming, ["calm", "settle", "anxious", "nervous", "gentle", "quiet", "tired"]),
+                (.physical, ["active", "playful", "zoom", "energy", "run", "move"]),
+                (.cognitive, ["smart", "bored", "puzzle", "learn", "curious", "challenge"]),
+                (.foraging, ["sniff", "food", "treat", "hungry", "search"]),
+                (.social, ["cuddle", "bond", "together", "attention", "lonely"]),
+                (.sensory, ["explore", "investigate", "texture", "sound", "novel"])
+            ]
+            for (category, words) in expressedPreferences where category == activity.category {
+                value += words.filter(profileWords.contains).count * 18
+            }
+            if pet.recentPlayIntent?.categories.contains(activity.category) == true { value += 34 }
+            if pet.preferredDayPeriods.contains(DayPeriod.current(at: day)) && DayPeriod.current(at: day).categories.contains(activity.category) { value += 16 }
+            if pet.foodMotivation == .high && activity.category == .foraging { value += 14 }
+            if pet.socialStyle == .interactive && activity.category == .social { value += 14 }
+            if pet.noiseSensitive && activity.category == .calming { value += 18 }
 
             for signal in history where signal.activityID == activity.id {
                 if signal.earlyStopReason == .ownerStopped { continue }

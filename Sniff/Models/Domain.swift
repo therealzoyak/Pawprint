@@ -332,6 +332,31 @@ struct Activity: Codable, Identifiable, Hashable {
     }
     var usesFoodReward: Bool { materials.contains { [.kibble, .treats, .lickMat].contains($0) } }
     var usesSnackReward: Bool { materials.contains(.treats) }
+    var displayTitle: String {
+        let handTuned: [String: String] = [
+            "dog-towel-search": "Towel Treasure Hunt",
+            "dog-box-sniff": "Scent Garden",
+            "dog-consent-check": "The Yes-or-No Game",
+            "dog-cup-choice": "Pick a Cup",
+            "dog-blanket-pause": "Cozy Reset",
+            "cat-paper-rustle": "Paper Pounce",
+            "cat-cardboard-lookout": "Box Lookout",
+            "cat-slow-blink": "Slow-Blink Hello",
+            "cat-kibble-trail": "Tiny Treasure Trail",
+            "cat-blanket-hideaway": "Blanket Hideaway"
+        ]
+        if let tuned = handTuned[id] { return tuned }
+        var cleaned = title
+        for prefix in ["Local Park ", "Dog Park ", "Living Room ", "Hiking Trail ", "Obstacle Course ", "Backyard ", "Beach "] {
+            if cleaned.hasPrefix(prefix) { cleaned.removeFirst(prefix.count); break }
+        }
+        cleaned = cleaned
+            .replacingOccurrences(of: "Flirt Pole", with: "Flirt-Pole")
+            .replacingOccurrences(of: "Hurdle Hop", with: "Happy Hurdles")
+            .replacingOccurrences(of: "Bone Dash", with: "Toy Dash")
+            .replacingOccurrences(of: "Sprinkler Zoomies", with: "Water Zoomies")
+        return cleaned
+    }
 }
 
 private extension String {
@@ -437,7 +462,7 @@ private extension String {
     var combinedActivityIDs: [String] = []
 
     init(activity: Activity, pet: PetProfile, reaction: Reaction, note: String = "", photoData: Data? = nil, actualDurationSeconds: Int? = nil, earlyStopReason: EarlyStopReason? = nil, combinedSessionID: UUID? = nil, combinedActivityIDs: [String] = []) {
-        petID = pet.id; activityID = activity.id; activityTitle = activity.title; categoryRaw = activity.category.rawValue
+        petID = pet.id; activityID = activity.id; activityTitle = activity.displayTitle; categoryRaw = activity.category.rawValue
         petName = pet.name; completedAt = .now; reactionRaw = reaction.rawValue; self.note = note; self.photoData = photoData
         presetDurationSeconds = activity.durationMinutes * 60
         self.actualDurationSeconds = max(0, actualDurationSeconds ?? activity.durationMinutes * 60)

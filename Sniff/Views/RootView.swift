@@ -919,36 +919,25 @@ struct TodayView: View {
             .shadow(color: Color.sniffPurple.opacity(0.28), radius: 16, y: 8)
     }
     private var quickWidgets: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Button(action: openCare) {
-                VStack(alignment: .center, spacing: 10) {
-                    Image(systemName: "checklist").font(.title3.bold()).foregroundStyle(Color.sniffGold)
-                        .frame(width: 38, height: 38).background(Color.sniffButter.opacity(0.75), in: Circle())
-                    Text("Care").font(.headline).frame(maxWidth: .infinity)
-                    Text(careWidgetText).font(.caption).foregroundStyle(Color.sniffMuted).multilineTextAlignment(.center).lineLimit(2, reservesSpace: true)
-                    Spacer(minLength: 0)
-                    Text(dueCareTasks.isEmpty ? "All set" : "View reminder").font(.caption2.bold()).foregroundStyle(Color.sniffGold)
+        Menu {
+            Button(action: openCare) { Label("Care · \(careWidgetText)", systemImage: "checklist") }
+            Button { showingBadges = true } label: { Label("Badge book", systemImage: badgeWidgetTrack.symbol) }
+            Button { showingProgress = true } label: { Label("Progress and play insights", systemImage: "chart.bar.fill") }
+            Button { editingProfile = true } label: { Label("Update \(pet.name)’s profile", systemImage: "slider.horizontal.3") }
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18).fill(LinearGradient(colors: [.sniffMango, .sniffPink, .sniffPurple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    Image(systemName: "sparkles").font(.title2.bold()).foregroundStyle(.white)
+                }.frame(width: 58, height: 58).shadow(color: Color.sniffPink.opacity(0.24), radius: 10, y: 5)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Everything else").font(.headline).foregroundStyle(Color.sniffInk)
+                    Text("Care, badges, insights, and profile").font(.caption).foregroundStyle(Color.sniffMuted)
                 }
-                .frame(maxWidth: .infinity, minHeight: 132, alignment: .top).padding(15).contentShape(Rectangle())
-            }.buttonStyle(.plain).frame(maxWidth: .infinity).background(.white.opacity(0.94), in: RoundedRectangle(cornerRadius: 22))
-                .overlay { RoundedRectangle(cornerRadius: 22).stroke(Color.sniffGold.opacity(0.16)) }
-
-            Button { showingBadges = true } label: {
-                VStack(alignment: .center, spacing: 10) {
-                    ZStack {
-                        Circle().fill(LinearGradient(colors: [.sniffMango, .sniffPink], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        Image(systemName: badgeWidgetTrack.symbol).font(.title3.bold()).foregroundStyle(.white)
-                    }.frame(width: 46, height: 46).shadow(color: Color.sniffPink.opacity(0.22), radius: 7, y: 4)
-                    Text("Badges").font(.headline).frame(maxWidth: .infinity)
-                    Text(badgeWidgetTrack.earnedLevel ?? badgeWidgetTrack.nextLevel ?? "Keep playing together")
-                        .font(.caption).foregroundStyle(Color.sniffMuted).multilineTextAlignment(.center).lineLimit(2, reservesSpace: true)
-                    Spacer(minLength: 0)
-                    Text("Open collection").font(.caption2.bold()).foregroundStyle(Color.sniffBerry)
-                }
-                .frame(maxWidth: .infinity, minHeight: 132, alignment: .top).padding(15).contentShape(Rectangle())
-            }.buttonStyle(.plain).frame(maxWidth: .infinity).background(LinearGradient(colors: [.white, Color.sniffPeach.opacity(0.42)], startPoint: .top, endPoint: .bottom), in: RoundedRectangle(cornerRadius: 22))
-                .overlay { RoundedRectangle(cornerRadius: 22).stroke(Color.sniffPurple.opacity(0.14)) }
-        }
+                Spacer()
+                Image(systemName: "ellipsis.circle.fill").font(.title2).foregroundStyle(Color.sniffPurple)
+            }.padding(15).background(LinearGradient(colors: [Color.sniffButter.opacity(0.72), Color.sniffPeach.opacity(0.82), Color.sniffLavender], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 24))
+        }.buttonStyle(.plain)
     }
     private var progressDetail: some View {
         NavigationStack {
@@ -1222,13 +1211,18 @@ struct PlayTimeSheet: View {
                     }.padding(15).background(.white, in: RoundedRectangle(cornerRadius: 20))
                     VStack(alignment: .leading, spacing: 10) {
                         Text("How is \(pet.name) right now?").font(.headline)
-                        LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 9) {
+                        Menu {
                             ForEach(PlayIntent.allCases) { item in
-                                Button { remember(item) } label: {
-                                    Label(item.title(for: pet.species), systemImage: item.symbol).frame(maxWidth: .infinity, minHeight: 42)
-                                }.buttonStyle(.bordered).tint(intent == item ? .sniffAqua : .gray)
+                                Button { remember(item) } label: { Label(item.title(for: pet.species), systemImage: item.symbol) }
                             }
+                        } label: {
+                            HStack {
+                                Label(intent?.title(for: pet.species) ?? "Choose their mood", systemImage: intent?.symbol ?? "sparkles")
+                                Spacer(); Image(systemName: "chevron.down")
+                            }.font(.headline).foregroundStyle(.white).padding(15)
+                                .background(LinearGradient(colors: [.sniffAqua, .sniffPurple], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 18))
                         }
+                        if let intent { Text(intent.hint(for: pet.species)).font(.caption).foregroundStyle(Color.sniffMuted) }
                     }
                     if intent == nil {
                         Text("Choose one to see the best fits.").font(.subheadline.bold()).foregroundStyle(Color.sniffMuted).frame(maxWidth: .infinity)
@@ -1240,7 +1234,7 @@ struct PlayTimeSheet: View {
                                     HStack(spacing: 12) {
                                         Image(suggestion.artworkName).resizable().scaledToFill().frame(width: 68, height: 68).clipped().clipShape(RoundedRectangle(cornerRadius: 16))
                                         VStack(alignment: .leading, spacing: 4) {
-                                            Text(suggestion.title).font(.headline).foregroundStyle(Color.sniffInk).lineLimit(2)
+                                            Text(suggestion.displayTitle).font(.headline).foregroundStyle(Color.sniffInk).lineLimit(2)
                                             Text("\(suggestion.durationMinutes) min · \(suggestion.category.funLabel)").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
                                         }
                                         Spacer(); Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(Color.sniffAqua)
@@ -1333,7 +1327,7 @@ struct ActivityCard: View {
                 Spacer()
                 Text(activity.category.funLabel).badge(color: activity.category.accent)
             }.foregroundStyle(Color.sniffMuted)
-            Text(activity.title).font(.system(.title, design: .rounded, weight: .bold))
+            Text(activity.displayTitle).font(.system(.title, design: .rounded, weight: .bold))
             Label(activity.materials.isEmpty ? "No materials needed" : activity.materials.map(\.label).joined(separator: " · "), systemImage: "shippingbox.fill")
                 .font(.caption.weight(.semibold)).foregroundStyle(Color.sniffMuted).lineLimit(2)
             Label("Tap to start", systemImage: "play.fill").font(.subheadline.bold()).foregroundStyle(activity.category.accent)
@@ -1366,6 +1360,8 @@ extension ActivityCategory {
 
 struct FetchView: View {
     let pet: PetProfile
+    @Query(sort: \EnrichmentSession.completedAt, order: .reverse) private var sessions: [EnrichmentSession]
+    @Query private var favorites: [FavoriteActivity]
     @State private var prompt = ""
     @State private var answer: String?
     @FocusState private var focused: Bool
@@ -1433,16 +1429,31 @@ struct FetchView: View {
     private func ask() {
         let question = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty else { return }
-        let safe = library?.safeActivities(for: pet) ?? []
         let lower = question.lowercased()
-        let match: Activity? = {
-            if lower.contains("settle") || lower.contains("calm") { return safe.first { $0.category == .calming } }
-            if lower.contains("quick") { return safe.min { $0.durationMinutes < $1.durationMinutes } }
-            if lower.contains("hard") { return safe.max { $0.tier < $1.tier } }
-            return safe.first
-        }()
+        let categoryWords: [(ActivityCategory, [String])] = [
+            (.calming, ["settle", "calm", "quiet", "anxious", "tired", "gentle"]),
+            (.physical, ["run", "move", "active", "zoom", "energy", "chase"]),
+            (.cognitive, ["hard", "challenge", "brain", "puzzle", "smart", "bored"]),
+            (.foraging, ["sniff", "food", "treat", "hungry", "search"]),
+            (.social, ["bond", "together", "cuddle", "attention"]),
+            (.sensory, ["explore", "sound", "texture", "curious", "new"])
+        ]
+        let requestedCategories = categoryWords.filter { $0.1.contains(where: lower.contains) }.map(\.0)
+        let statedMinutes = lower.split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) }.first
+        let timeLimit: Int?
+        if let statedMinutes { timeLimit = statedMinutes }
+        else if lower.contains("quick") { timeLimit = 5 }
+        else { timeLimit = nil }
+        let history = ActivityLibrary.history(for: pet, sessions: sessions)
+        let favoriteIDs = Set(favorites.filter { $0.petID == pet.id }.map(\.activityID))
+        var ranked = library?.rankedRecommendations(for: pet, history: history, favorites: favoriteIDs, preferredCategories: requestedCategories, maximumMinutes: timeLimit) ?? []
+        if lower.contains("hard") || lower.contains("challenge") { ranked.sort { $0.tier == $1.tier ? $0.durationMinutes < $1.durationMinutes : $0.tier > $1.tier } }
+        if let requestedMaterial = pet.materials.first(where: { lower.contains($0.label.lowercased()) || lower.contains($0.rawValue.replacingOccurrences(of: "_", with: " ")) }) {
+            ranked = ranked.filter { $0.materials.contains(requestedMaterial) } + ranked.filter { !$0.materials.contains(requestedMaterial) }
+        }
+        let match = ranked.first
         if let match {
-            answer = "Try \(match.title). It takes about \(match.durationMinutes) minutes and uses \(match.materials.map(\.label).joined(separator: ", ")). \(match.description) Want the full steps? Tap Play and you’ll find it with the other ideas."
+            answer = "Try \(match.displayTitle). It takes about \(match.durationMinutes) minutes and uses \(match.materials.map(\.label).joined(separator: ", ")). \(match.description) Open Play when you’re ready for the steps."
         } else {
             answer = "I couldn’t find a match using \(pet.name)’s current materials. Add another material to their setup, or ask me for a simpler version."
         }
@@ -1655,34 +1666,35 @@ struct LibraryView: View {
             VStack(alignment: .leading, spacing: 18) {
                 Text("Play & enrichment").font(.system(.largeTitle, design: .rounded, weight: .bold))
                 Text("Safe play, discovery, and bonding ideas for \(pet.name).").foregroundStyle(.secondary)
-                Picker("Library view", selection: $showingRecommended) {
-                    Text("For \(pet.name)").tag(true)
-                    Text("All safe ideas").tag(false)
-                }.pickerStyle(.segmented)
                 VStack(alignment: .leading, spacing: 14) {
-                    HStack {
-                        Text("FILTERS").font(.caption.bold()).tracking(1.2).foregroundStyle(Color.sniffBlue)
-                        Spacer()
-                        if hasActiveFilters { Button("Clear") { clearFilters() }.font(.caption.bold()) }
+                    Menu {
+                        Section("Collection") {
+                            Button { showingRecommended = true } label: { Label("For \(pet.name)", systemImage: showingRecommended ? "checkmark" : "sparkles") }
+                            Button { showingRecommended = false } label: { Label("All safe ideas", systemImage: !showingRecommended ? "checkmark" : "square.grid.2x2") }
+                        }
+                        Section("Play styles · choose several") {
+                            ForEach(ActivityCategory.allCases) { item in
+                                Button {
+                                    if categories.contains(item) { categories.remove(item) } else { categories.insert(item) }
+                                } label: { Label(item.funLabel, systemImage: categories.contains(item) ? "checkmark.circle.fill" : "circle") }
+                            }
+                        }
+                        Section("Material") {
+                            Button { material = nil } label: { Label("Any material", systemImage: material == nil ? "checkmark" : "shippingbox") }
+                            ForEach(pet.materials.sorted { $0.label < $1.label }) { item in
+                                Button { material = item } label: { Label(item.label, systemImage: material == item ? "checkmark" : item.icon) }
+                            }
+                        }
+                        if hasActiveFilters { Button("Reset filters", role: .destructive) { clearFilters() } }
+                    } label: {
+                        HStack {
+                            Label(filterSummary, systemImage: "slider.horizontal.3")
+                            Spacer(); Image(systemName: "chevron.down")
+                        }.font(.subheadline.bold()).foregroundStyle(Color.sniffPurple).padding(13)
+                            .background(LinearGradient(colors: [Color.sniffLavender, Color.sniffPeach], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 16))
                     }
                     HStack { Text("Up to \(maximumMinutes) minutes"); Slider(value: Binding(get: { Double(maximumMinutes) }, set: { maximumMinutes = Int($0) }), in: 3...30, step: 1).accessibilityLabel("Maximum activity duration") }
                     Toggle("Only materials we have", isOn: $materialsOnly)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack {
-                            FilterChip(title: "All types", selected: categories.isEmpty) { categories.removeAll() }
-                            ForEach(ActivityCategory.allCases) { item in
-                                FilterChip(title: item.funLabel, selected: categories.contains(item)) {
-                                    if categories.contains(item) { categories.remove(item) } else { categories.insert(item) }
-                                }
-                            }
-                        }
-                    }
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack {
-                            FilterChip(title: "Any material", selected: material == nil) { material = nil }
-                            ForEach(pet.materials.sorted { $0.label < $1.label }) { item in FilterChip(title: item.label, selected: material == item) { material = item } }
-                        }
-                    }.accessibilityLabel("Material filter")
                 }.padding().background(Color.sniffSurface, in: RoundedRectangle(cornerRadius: 18)).overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.sniffLine) }
                 Text("\(activities.count) \(showingRecommended ? "recommended" : "safe") \(activities.count == 1 ? "idea" : "ideas")").font(.subheadline.bold())
                 if activities.isEmpty { ContentUnavailableView("No matches", systemImage: "line.3.horizontal.decrease.circle", description: Text("Try more time, another category, or include activities needing other materials.")) }
@@ -1693,6 +1705,11 @@ struct LibraryView: View {
         }.background(Color.sniffPaper).navigationTitle("Play library").navigationBarTitleDisplayMode(.inline)
     }
     private var hasActiveFilters: Bool { maximumMinutes != 15 || !categories.isEmpty || material != nil || materialsOnly }
+    private var filterSummary: String {
+        let mode = showingRecommended ? "For \(pet.name)" : "All safe ideas"
+        let styles = categories.isEmpty ? "all styles" : "\(categories.count) styles"
+        return "\(mode) · \(styles)"
+    }
     private func clearFilters() { maximumMinutes = 15; categories.removeAll(); material = nil; materialsOnly = false }
 }
 
@@ -1802,7 +1819,7 @@ struct ActivityDetailView: View {
         VStack(spacing: 22) {
             Spacer()
             PetAvatar(pet: pet, size: 82)
-            Text(activity.title).font(.title2.bold()).multilineTextAlignment(.center)
+            Text(activity.displayTitle).font(.title2.bold()).multilineTextAlignment(.center)
             ZStack {
                 Circle().stroke(flowColor.opacity(0.13), lineWidth: 18)
                 Circle().trim(from: 0, to: min(CGFloat(playSeconds) / CGFloat(max(activity.durationMinutes * 60, 1)), 1))
@@ -1923,7 +1940,7 @@ struct CompletionView: View {
                         Button { saveAndAdd(suggestion) } label: { Label("Add another activity", systemImage: "plus.circle.fill") }
                             .buttonStyle(.bordered).tint(.sniffAqua)
                             .disabled(reaction == nil || (endedEarly && earlyStopReason == nil))
-                        Text("Optional · \(suggestion.durationMinutes) min · \(suggestion.title)").font(.caption).foregroundStyle(.secondary)
+                        Text("Optional · \(suggestion.durationMinutes) min · \(suggestion.displayTitle)").font(.caption).foregroundStyle(.secondary)
                     }
                 }.padding()
             }.background(Color.sniffPaper).navigationTitle("Done").navigationBarTitleDisplayMode(.inline)
