@@ -516,7 +516,7 @@ struct MainTabView: View {
                 }
             } label: {
                 HStack(spacing: 7) {
-                    PetAvatar(pet: current, size: 28, animated: false)
+                    PetAvatar(pet: current, size: 28, animated: false, showsAccessory: false)
                     Text(current.name).font(.subheadline.bold())
                     Image(systemName: "chevron.down").font(.caption2.bold())
                 }.padding(.leading, 4).padding(.trailing, 10).padding(.vertical, 4)
@@ -874,31 +874,55 @@ struct TodayView: View {
         .onAppear { playTagline = playTaglines.randomElement() ?? playTagline }
     }
     private var petBlock: some View {
-        VStack(spacing: 12) {
-            PetAvatar(pet: pet, size: 92)
-            VStack(spacing: 3) {
-                Text(pet.name).font(.system(size: 30, weight: .bold, design: .default))
+        VStack(spacing: 14) {
+            HStack(spacing: 15) {
+                PetAvatar(pet: pet, size: 74, animated: true, showsAccessory: false)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Hello, \(pet.name)!").font(.custom("AvenirNext-DemiBold", size: 24, relativeTo: .title2))
                 Text("\(recentWeekSessions.count) \(recentWeekSessions.count == 1 ? "play" : "plays") this week")
                     .font(.custom("AvenirNext-Medium", size: 13, relativeTo: .caption)).foregroundStyle(Color.sniffMuted)
+                }
+                Spacer()
             }
             Button { showingProgress = true } label: {
-                VStack(spacing: 8) {
-                    HStack(spacing: 9) {
-                        Image(systemName: "sun.max.fill").foregroundStyle(Color.sniffMango)
-                        Text("Today: \(todayMinutes) of \(pet.dailyPlayGoalMinutes) min").font(.subheadline.bold())
-                        Spacer()
-                        Image(systemName: "chevron.right").font(.caption2.bold()).foregroundStyle(Color.sniffPurple)
-                    }
-                    ProgressView(value: Double(todayMinutes), total: Double(max(pet.dailyPlayGoalMinutes, 1)))
-                        .tint(todayMinutes >= pet.dailyPlayGoalMinutes ? .sniffMint : .sniffMango)
+                VStack(spacing: 11) {
+                    progressRow(
+                        title: "Today",
+                        value: todayMinutes,
+                        goal: pet.dailyPlayGoalMinutes,
+                        icon: "sun.max.fill",
+                        color: .sniffMango,
+                        showsChevron: true
+                    )
+                    progressRow(
+                        title: "This week",
+                        value: recentMinutes,
+                        goal: pet.dailyPlayGoalMinutes * 7,
+                        icon: "calendar",
+                        color: .sniffPurple,
+                        showsChevron: false
+                    )
                 }
                 .foregroundStyle(Color.sniffInk).padding(.horizontal, 12).padding(.vertical, 9)
-                .background(Color.sniffSurface, in: Capsule())
-                .overlay { Capsule().stroke(Color.sniffAqua.opacity(0.12)) }
+                .background(Color.sniffSurface, in: RoundedRectangle(cornerRadius: 20))
+                .overlay { RoundedRectangle(cornerRadius: 20).stroke(Color.sniffAqua.opacity(0.12)) }
             }.buttonStyle(.plain).accessibilityHint("Shows weekly progress and badges")
-        }.padding(18).background(.white, in: RoundedRectangle(cornerRadius: 28))
-            .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.sniffLine.opacity(0.8)) }
-            .shadow(color: Color.sniffAqua.opacity(0.08), radius: 14, y: 7)
+        }.padding(17)
+            .background(LinearGradient(colors: [Color.sniffSky.opacity(0.18), .white, Color.sniffLavender.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 26))
+            .overlay { RoundedRectangle(cornerRadius: 26).stroke(Color.sniffAqua.opacity(0.18)) }
+            .shadow(color: Color.sniffAqua.opacity(0.1), radius: 14, y: 7)
+    }
+    private func progressRow(title: String, value: Int, goal: Int, icon: String, color: Color, showsChevron: Bool) -> some View {
+        VStack(spacing: 5) {
+            HStack(spacing: 8) {
+                Image(systemName: icon).foregroundStyle(color)
+                Text("\(title): \(value) of \(goal) min").font(.caption.bold())
+                Spacer()
+                if showsChevron { Image(systemName: "chevron.right").font(.caption2.bold()).foregroundStyle(Color.sniffPurple) }
+            }
+            ProgressView(value: Double(value), total: Double(max(goal, 1)))
+                .tint(value >= goal ? .sniffMint : color)
+        }
     }
     private var shouldSuggestProfileCheckIn: Bool {
         let staleDate = Calendar.current.date(byAdding: .day, value: -30, to: .now) ?? .now
@@ -1330,8 +1354,8 @@ struct PlayTimeSheet: View {
                 ScrollView {
                 VStack(spacing: 22) {
                     playHeader
-                    petPicker
-                    timeCard
+                    timeDial
+                    companionPicker
                     dayPeriodCard
                     moodPicker
                     if intent == nil {
@@ -1357,9 +1381,70 @@ struct PlayTimeSheet: View {
             }.buttonStyle(.plain)
         }
     }
-    private var petPicker: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: -12) { ForEach(selectedPets) { PetAvatar(pet: $0, size: 72, animated: true) } }
+    private var timeDial: some View {
+        let fraction = Double(availableMinutes - 3) / 27
+        return VStack(spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("How long can you play?").font(.custom("AvenirNext-DemiBold", size: 18, relativeTo: .headline))
+                    Text("Turn the dial").font(.caption).foregroundStyle(Color.sniffMuted)
+                }
+                Spacer()
+            }
+            ZStack {
+                ForEach(0..<28, id: \.self) { index in
+                    Capsule()
+                        .fill(index % 5 == 0 ? Color.sniffPurple : Color.sniffAqua.opacity(0.34))
+                        .frame(width: index % 5 == 0 ? 3 : 2, height: index % 5 == 0 ? 12 : 7)
+                        .offset(y: -97)
+                        .rotationEffect(.degrees(Double(index) / 28 * 360))
+                }
+                Circle().stroke(Color.sniffAqua.opacity(0.12), lineWidth: 15).frame(width: 174, height: 174)
+                Circle().trim(from: 0, to: max(fraction, 0.015)).stroke(
+                    AngularGradient(colors: [.sniffAqua, .sniffSky, .sniffPurple, .sniffPink], center: .center),
+                    style: StrokeStyle(lineWidth: 15, lineCap: .round)
+                ).rotationEffect(.degrees(-90)).frame(width: 174, height: 174)
+                HStack(spacing: -12) {
+                    ForEach(selectedPets) { PetAvatar(pet: $0, size: selectedPets.count > 1 ? 78 : 104, animated: false, showsAccessory: false) }
+                }
+                Text("\(availableMinutes) min")
+                    .font(.custom("AvenirNext-DemiBold", size: 16, relativeTo: .headline))
+                    .foregroundStyle(Color.sniffInk)
+                    .contentTransition(.numericText())
+                    .padding(.horizontal, 14).padding(.vertical, 6)
+                    .background(.white.opacity(0.94), in: Capsule())
+                    .overlay { Capsule().stroke(Color.sniffAqua.opacity(0.24)) }
+                    .shadow(color: Color.sniffInk.opacity(0.1), radius: 5, y: 2)
+                    .offset(y: 55)
+                Capsule().fill(Color.sniffAqua)
+                    .frame(width: 5, height: 19)
+                    .overlay { Capsule().stroke(.white.opacity(0.9), lineWidth: 1.5) }
+                    .shadow(color: Color.sniffAqua.opacity(0.3), radius: 4)
+                    .offset(y: -97)
+                    .rotationEffect(.degrees(fraction * 360))
+            }
+            .frame(width: 208, height: 208)
+            .contentShape(Circle())
+            .gesture(DragGesture(minimumDistance: 0).onChanged(updateTimeFromDial))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Time available")
+            .accessibilityValue("\(availableMinutes) minutes")
+            .accessibilityAdjustableAction { direction in
+                availableMinutes = min(30, max(3, availableMinutes + (direction == .increment ? 1 : -1)))
+            }
+            if availableMinutes == 30 {
+                Label("Switch activities for fresh fun", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.caption.bold()).foregroundStyle(Color.sniffPurple)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(Color.sniffLavender.opacity(0.9), in: Capsule())
+                    .transition(.scale(scale: 0.82).combined(with: .opacity))
+            }
+        }.padding(18)
+            .background(LinearGradient(colors: [Color.sniffLavender.opacity(0.88), Color.sniffMint.opacity(0.28)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 30))
+            .overlay { RoundedRectangle(cornerRadius: 30).stroke(Color.sniffAqua.opacity(0.2)) }
+    }
+    private var companionPicker: some View {
+        Group {
             if !compatibleCompanions.isEmpty {
                 HStack(spacing: 10) {
                     Text("Playing together").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
@@ -1373,18 +1458,6 @@ struct PlayTimeSheet: View {
                 }
             }
         }
-    }
-    private var timeCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Time available").font(.headline)
-                Spacer()
-                Text("\(availableMinutes) min").font(.headline).foregroundStyle(Color.sniffAqua).contentTransition(.numericText())
-            }
-            Slider(value: Binding(get: { Double(availableMinutes) }, set: { availableMinutes = Int($0.rounded()) }), in: 3...30, step: 1).tint(.sniffAqua)
-        }.padding(18)
-            .background(LinearGradient(colors: [Color.sniffLavender.opacity(0.9), Color.sniffMint.opacity(0.22)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
-            .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.sniffAqua.opacity(0.18)) }
     }
     private var dayPeriodCard: some View {
         HStack {
@@ -1438,6 +1511,22 @@ struct PlayTimeSheet: View {
     }
     private func toggleCompanion(_ companion: PetProfile) {
         if selectedPetIDs.contains(companion.id) { selectedPetIDs.remove(companion.id) } else { selectedPetIDs.insert(companion.id) }
+    }
+    private func updateTimeFromDial(_ value: DragGesture.Value) {
+        let center = CGPoint(x: 87, y: 87)
+        let dx = value.location.x - center.x
+        let dy = value.location.y - center.y
+        var radians = atan2(dx, -dy)
+        if radians < 0 { radians += .pi * 2 }
+        let fraction = radians / (.pi * 2)
+        let proposed = min(30, max(3, 3 + Int((fraction * 27).rounded())))
+        if availableMinutes >= 27 && proposed <= 6 {
+            availableMinutes = 30
+        } else if availableMinutes <= 6 && proposed >= 27 {
+            availableMinutes = 3
+        } else {
+            availableMinutes = proposed
+        }
     }
     private func remember(_ newIntent: PlayIntent) {
         intent = newIntent
@@ -2510,6 +2599,7 @@ struct PetAvatar: View {
     let pet: PetProfile
     let size: CGFloat
     var animated = true
+    var showsAccessory = true
 
     var body: some View {
         Group {
@@ -2522,10 +2612,12 @@ struct PetAvatar: View {
         .frame(width: size, height: size).clipShape(Circle())
         .overlay(Circle().stroke(.white, lineWidth: max(3, size * 0.055)))
         .overlay(alignment: .bottomTrailing) {
-            Image(systemName: pet.avatarData == nil ? "heart.fill" : "camera.fill")
-                .font(.system(size: size * 0.14, weight: .bold)).foregroundStyle(.white)
-                .padding(size * 0.08).background(Color.sniffBerry, in: Circle())
-                .overlay(Circle().stroke(.white, lineWidth: 2))
+            if showsAccessory {
+                Image(systemName: pet.avatarData == nil ? "heart.fill" : "camera.fill")
+                    .font(.system(size: size * 0.14, weight: .bold)).foregroundStyle(.white)
+                    .padding(size * 0.08).background(Color.sniffBerry, in: Circle())
+                    .overlay(Circle().stroke(.white, lineWidth: 2))
+            }
         }
         .shadow(color: Color.sniffPurple.opacity(0.2), radius: size * 0.15, y: size * 0.08)
         .phaseAnimator(animated && !reduceMotion ? [false, true] : [false]) { content, floating in
