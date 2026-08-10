@@ -7,26 +7,9 @@ Pawprint (originally developed under the working name Sniff) includes two local 
 
 ## Native iOS app
 
-Open `Sniff.xcodeproj` in Xcode 16 or newer, select an iOS 17+ simulator, and run the `Sniff` scheme. The app uses SwiftData locally. Ask Fetch connects to the optional Python AI service described below.
+Open `Sniff.xcodeproj` in Xcode 16 or newer, select an iOS 17+ simulator, and run the `Sniff` scheme. The app uses SwiftData locally and has no network, account, payment, or backend dependency.
 
-The native slice includes dog/cat onboarding, multi-pet switching, a typed reviewed seed catalog, hard safety and materials filtering, explainable preference-aware daily recommendations, full instructions, four completion reactions, optional photo selection, favorites, a filterable safe library, a cumulative memory scrapbook with pet-centered observed preferences, and Fetch, an OpenAI-powered pet-aware copilot. The phone safety-filters candidate activities first; the AI can understand a natural-language request and choose only from those reviewed candidates. Unit tests cover catalog decoding, safety filtering, reaction effects, rotation, recent avoidance, calming bias, swap state, pet isolation, filters, and safe recommendation output.
-
-### Run Ask Fetch AI
-
-Keep `OPENAI_API_KEY` on the Python server; never add it to the iOS app or commit it.
-
-```sh
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-# Put your key in .env, then export it into the process:
-set -a; source .env; set +a
-uvicorn app:app --reload
-```
-
-The simulator uses `http://127.0.0.1:8000` by default. For a physical device or production, set the `FETCH_AI_BASE_URL` Xcode build setting to the HTTPS URL of the deployed Python service. The backend defaults to `gpt-5.6-terra`; set `OPENAI_MODEL` to change it.
+The native slice includes dog/cat onboarding, multi-pet switching, a typed reviewed seed catalog, hard safety and materials filtering, explainable preference-aware daily recommendations, full instructions, four completion reactions, optional photo selection, favorites, a filterable safe library, a cumulative memory scrapbook with pet-centered observed preferences, and Fetch, a local pet-aware helper. Fetch recognizes different kinds of requests—including activity constraints, pet-name ideas, greetings, and profile questions—without a network connection or per-request cost. Unit tests cover catalog decoding, safety filtering, reaction effects, rotation, recent avoidance, calming bias, swap state, pet isolation, filters, and safe recommendation output.
 
 Run tests from Xcode or with:
 

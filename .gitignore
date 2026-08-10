@@ -27,7 +27,6 @@ fastlane/test_output/
 GoogleService-Info.plist
 .env
 .env.*
-!.env.example
 
 # macOS Finder metadata
 .DS_Store

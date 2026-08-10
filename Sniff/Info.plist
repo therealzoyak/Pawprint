@@ -24,13 +24,6 @@
 	<string>public.app-category.lifestyle</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>FetchAIBaseURL</key>
-	<string>$(FETCH_AI_BASE_URL)</string>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-	</dict>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Add an optional photo to your Pawprint memory.</string>
 	<key>UILaunchScreen</key>

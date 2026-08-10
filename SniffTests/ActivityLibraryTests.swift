@@ -218,6 +218,46 @@ final class ActivityLibraryTests: XCTestCase {
         XCTAssertEqual(library.filteredActivities(for: pet, availableMaterialsOnly: false).map(\.id), ["sniff-game"])
     }
 
+    func testFetchTreatsRenameRequestAsNamesNotAnActivity() {
+        let pet = makePet(name: "Epstein")
+        let reply = FetchAssistant().reply(
+            to: "give a new name for epstein",
+            pet: pet,
+            candidates: [activity("random-activity", .social)]
+        )
+        XCTAssertNil(reply.activityID)
+        XCTAssertTrue(reply.text.contains("fresh name for Epstein"))
+        XCTAssertFalse(reply.text.contains("random-activity"))
+    }
+
+    func testFetchUnderstandsSynonymsForCalmingRequest() {
+        let pet = makePet()
+        let reply = FetchAssistant().reply(
+            to: "He seems overwhelmed and needs something soothing before bedtime",
+            pet: pet,
+            candidates: [activity("fast-chase", .physical), activity("quiet-reset", .calming)]
+        )
+        XCTAssertEqual(reply.activityID, "quiet-reset")
+    }
+
+    func testFetchUnderstandsTimeConstraint() {
+        let pet = makePet()
+        let reply = FetchAssistant().reply(
+            to: "I only have five minutes",
+            pet: pet,
+            candidates: [activity("long-game", .social, minutes: 15), activity("short-game", .social, minutes: 5)]
+        )
+        XCTAssertEqual(reply.activityID, "short-game")
+    }
+
+    func testFetchCanAnswerProfileQuestionWithoutChoosingActivity() {
+        let pet = makePet(name: "Milo", materials: [.towel])
+        let reply = FetchAssistant().reply(to: "What do you know about Milo?", pet: pet, candidates: [])
+        XCTAssertNil(reply.activityID)
+        XCTAssertTrue(reply.text.contains("medium energy"))
+        XCTAssertTrue(reply.text.contains("Towel"))
+    }
+
     private func makePet(name: String = "Milo", materials: Set<Material> = []) -> PetProfile {
         PetProfile(name: name, species: .dog, age: .adult, size: .medium, energy: .medium, limitations: [], materials: materials)
     }
