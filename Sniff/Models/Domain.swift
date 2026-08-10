@@ -618,12 +618,12 @@ enum AchievementEngine {
         let consecutive = longestConsecutiveDays(days, calendar: calendar)
         let weeklyMinutes = bestSevenDayMinutes(sorted, calendar: calendar)
         return [
-            makeTrack(id: "weekly-time", title: "Quality time", symbol: "clock.badge.checkmark.fill", value: weeklyMinutes, thresholds: [60, 180, 300, 600], names: ["One Good Hour", "Three-Hour Teammates", "Five-Hour Friends", "Week Together"]),
-            makeTrack(id: "good-days", title: "Good days", symbol: "calendar.badge.checkmark", value: consecutive, thresholds: [3, 7, 14, 30], names: ["Three Good Days", "A Week of Play", "Two Joyful Weeks", "A Month of Moments"]),
-            makeTrack(id: "adventures", title: "Adventures", symbol: "pawprint.fill", value: sorted.count, thresholds: [5, 15, 30, 75], names: ["Getting Started", "Play Partner", "Adventure Guide", "Enrichment Expert"]),
-            makeTrack(id: "explorer", title: "Variety", symbol: "sparkles", value: categories, thresholds: [2, 4, 6], names: ["Curious Pair", "Variety Seeker", "Whole-Play Explorer"]),
+            makeTrack(id: "weekly-time", title: "Quality time", symbol: "timer", value: weeklyMinutes, thresholds: [60, 180, 300, 600], names: ["One Good Hour", "Three-Hour Teammates", "Five-Hour Friends", "Week Together"]),
+            makeTrack(id: "good-days", title: "Good days", symbol: "sun.max.fill", value: consecutive, thresholds: [3, 7, 14, 30], names: ["Three Good Days", "A Week of Play", "Two Joyful Weeks", "A Month of Moments"]),
+            makeTrack(id: "adventures", title: "Adventures", symbol: "dog.fill", value: sorted.count, thresholds: [5, 15, 30, 75], names: ["Getting Started", "Play Partner", "Adventure Guide", "Enrichment Expert"]),
+            makeTrack(id: "explorer", title: "Variety", symbol: "safari.fill", value: categories, thresholds: [2, 4, 6], names: ["Curious Pair", "Variety Seeker", "Whole-Play Explorer"]),
             makeTrack(id: "happy-hits", title: "Happy hits", symbol: "heart.fill", value: loved, thresholds: [3, 10, 25], names: ["Found a Favorite", "Joy Finder", "Happiness Expert"]),
-            makeTrack(id: "lifetime-time", title: "Time together", symbol: "hourglass.bottomhalf.filled", value: totalMinutes, thresholds: [120, 600, 1_500], names: ["Two Hours Together", "Ten-Hour Bond", "Twenty-Five-Hour Team"])
+            makeTrack(id: "lifetime-time", title: "Time together", symbol: "infinity", value: totalMinutes, thresholds: [120, 600, 1_500], names: ["Two Hours Together", "Ten-Hour Bond", "Twenty-Five-Hour Team"])
         ]
     }
 
