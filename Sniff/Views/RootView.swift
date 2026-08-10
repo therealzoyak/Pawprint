@@ -107,8 +107,8 @@ struct WelcomeView: View {
                 Button("Set up their profile") { onboarding = true }.buttonStyle(PrimaryButtonStyle())
                 Spacer()
             }.padding(28)
-        }.fullScreenCover(isPresented: $onboarding) {
-            OnboardingView(ownerUID: ownerUID, onWillComplete: onWillComplete, onCompleted: onCompleted)
+        }.fullScreenCover(isPresented: $onboarding, onDismiss: onCompleted) {
+            OnboardingView(ownerUID: ownerUID, onWillComplete: onWillComplete, onSaveFailed: onCompleted)
         }
     }
 }
@@ -117,7 +117,7 @@ struct OnboardingView: View {
     var accountID: UUID? = nil
     var ownerUID: String? = nil
     var onWillComplete: () -> Void = {}
-    var onCompleted: () -> Void = {}
+    var onSaveFailed: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @AppStorage("petDraft.step") private var step = 0
@@ -401,14 +401,10 @@ struct OnboardingView: View {
                 try modelContext.save()
                 clearDraft()
                 dismiss()
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(350))
-                    onCompleted()
-                }
             } catch {
                 modelContext.delete(pet)
                 isSaving = false
-                onCompleted()
+                onSaveFailed()
                 saveError = "Your answers are still here. Pawprint couldn’t save the profile yet."
             }
         }
