@@ -7,20 +7,23 @@ struct RootView: View {
     @Query(sort: \PetProfile.createdAt) private var pets: [PetProfile]
     var showPersistenceWarning = false
     @State private var showingLaunchSurface = true
-    @State private var finishingOnboarding = false
+    @State private var showingOnboarding = false
     var body: some View {
         ZStack {
             Color.sniffPaper.ignoresSafeArea()
-            if pets.isEmpty || finishingOnboarding {
-                WelcomeView(ownerUID: "local", onWillComplete: { finishingOnboarding = true }) {
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) { finishingOnboarding = false }
-                }.transition(routeTransition)
+            if showingOnboarding {
+                OnboardingView(
+                    ownerUID: "local",
+                    onCancel: { showingOnboarding = false },
+                    onSaved: { showingOnboarding = false }
+                )
+            } else if pets.isEmpty {
+                WelcomeView { showingOnboarding = true }
             }
-            else { MainTabView(ownerUID: nil).transition(routeTransition) }
+            else { MainTabView(ownerUID: nil) }
             if showingLaunchSurface { LaunchSurface().transition(.opacity) }
         }
             .tint(.sniffBlue).foregroundStyle(Color.sniffInk).fontDesign(.rounded)
-            .animation(.spring(response: 0.48, dampingFraction: 0.84), value: pets.count)
             .safeAreaInset(edge: .top, spacing: 0) {
                 if showPersistenceWarning && !showingLaunchSurface {
                     Label("Pet data couldn’t be opened. Running a temporary safe session.", systemImage: "exclamationmark.triangle.fill")
@@ -32,7 +35,6 @@ struct RootView: View {
                 withAnimation(.easeOut(duration: 0.28)) { showingLaunchSurface = false }
             }
     }
-    private var routeTransition: AnyTransition { .opacity.combined(with: .scale(scale: 0.97)) }
 }
 
 struct LaunchSurface: View {
@@ -83,10 +85,7 @@ struct FancyField: View {
 }
 
 struct WelcomeView: View {
-    let ownerUID: String
-    var onWillComplete: () -> Void = {}
-    var onCompleted: () -> Void = {}
-    @State private var onboarding = false
+    let startOnboarding: () -> Void
     var body: some View {
         ZStack {
             Color.sniffPaper.ignoresSafeArea()
@@ -104,11 +103,9 @@ struct WelcomeView: View {
                     Label("Build a playful rhythm, at your pace", systemImage: "calendar")
                     Label("Bonding, not busywork", systemImage: "heart")
                 }.font(.headline).foregroundStyle(Color.sniffInk.opacity(0.88))
-                Button("Set up their profile") { onboarding = true }.buttonStyle(PrimaryButtonStyle())
+                Button("Set up their profile", action: startOnboarding).buttonStyle(PrimaryButtonStyle())
                 Spacer()
             }.padding(28)
-        }.fullScreenCover(isPresented: $onboarding, onDismiss: onCompleted) {
-            OnboardingView(ownerUID: ownerUID, onWillComplete: onWillComplete, onSaveFailed: onCompleted)
         }
     }
 }
@@ -116,8 +113,8 @@ struct WelcomeView: View {
 struct OnboardingView: View {
     var accountID: UUID? = nil
     var ownerUID: String? = nil
-    var onWillComplete: () -> Void = {}
-    var onSaveFailed: () -> Void = {}
+    var onCancel: (() -> Void)? = nil
+    var onSaved: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @AppStorage("petDraft.step") private var step = 0
@@ -388,7 +385,6 @@ struct OnboardingView: View {
         if step < totalSteps - 1 { withAnimation { step += 1 } }
         else {
             isSaving = true
-            onWillComplete()
             let pet = PetProfile(name: name.trimmingCharacters(in: .whitespaces), species: species, age: ageBand, size: sizeBand, energy: energyLevel, exactAgeYears: ageYears, weightPounds: weightPounds, limitations: limitations, materials: materials, accountID: accountID, ownerUID: ownerUID)
             pet.preferredDayPeriodRaws = dayPeriods.map(\.rawValue).sorted(); pet.foodMotivationRaw = foodMotivationRaw
             pet.socialStyleRaw = socialStyleRaw; pet.noiseSensitive = noiseSensitive; modelContext.insert(pet)
@@ -400,17 +396,17 @@ struct OnboardingView: View {
             do {
                 try modelContext.save()
                 clearDraft()
-                dismiss()
+                if let onSaved { onSaved() } else { dismiss() }
             } catch {
                 modelContext.delete(pet)
                 isSaving = false
-                onSaveFailed()
                 saveError = "Your answers are still here. Pawprint couldn’t save the profile yet."
             }
         }
     }
     private func goBack() {
         if step > 0 { withAnimation { step -= 1 } }
+        else if let onCancel { onCancel() }
         else { dismiss() }
     }
     private func selectSpecies(_ selection: Species) {
@@ -499,21 +495,18 @@ struct MainTabView: View {
         guard let ownerUID else { return pets }
         return pets.filter { $0.ownerUID == ownerUID }
     }
+
     private var pet: PetProfile? { accountPets.first { $0.id.uuidString == selectedPetID } ?? accountPets.first }
     var body: some View {
         Group {
             if let pet {
-                ZStack {
-                    Group {
-                        switch section {
-                        case .play: NavigationStack { TodayView(pet: pet, availablePets: accountPets, openCare: { section = .care }).toolbar { petToolbar(pet) } }
-                        case .fetch: NavigationStack { FetchView(pet: pet).toolbar { petToolbar(pet) } }
-                        case .care: NavigationStack { CareView(pet: pet).toolbar { petToolbar(pet) } }
-                        }
-                    }.id(section).transition(.opacity.combined(with: .scale(scale: 0.985)))
+                Group {
+                    switch section {
+                    case .play: NavigationStack { TodayView(pet: pet, availablePets: accountPets, openCare: { section = .care }).toolbar { petToolbar(pet) } }
+                    case .fetch: NavigationStack { FetchView(pet: pet).toolbar { petToolbar(pet) } }
+                    case .care: NavigationStack { CareView(pet: pet).toolbar { petToolbar(pet) } }
+                    }
                 }
-                .id("\(pet.id)-\(section.rawValue)")
-                .animation(.easeInOut(duration: 0.24), value: section)
                 .safeAreaInset(edge: .bottom, spacing: 0) { PawprintTabBar(selection: $section) }
             }
         }.onAppear { if !accountPets.contains(where: { $0.id.uuidString == selectedPetID }) { selectedPetID = accountPets.first?.id.uuidString ?? "" } }
