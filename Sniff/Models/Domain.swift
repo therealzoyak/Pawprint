@@ -390,6 +390,7 @@ private extension String {
     var sleepHour: Int = 22
     var hoursAloneDaily: Double = 2
     var livingStyleRaw: String = LivingStyle.indoors.rawValue
+    var dailyPlayGoalMinutes: Int = 15
 
     init(name: String, species: Species, age: AgeBand, size: SizeBand, energy: EnergyLevel, exactAgeYears: Double? = nil, weightPounds: Double? = nil, breedGuess: String? = nil, limitations: Set<Limitation>, materials: Set<Material>, accountID: UUID? = nil, ownerUID: String? = nil) {
         self.name = name; speciesRaw = species.rawValue; ageRaw = age.rawValue; sizeRaw = size.rawValue; energyRaw = energy.rawValue

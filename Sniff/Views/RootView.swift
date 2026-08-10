@@ -135,12 +135,13 @@ struct OnboardingView: View {
     @AppStorage("petDraft.sleepHour") private var sleepHour = 22
     @AppStorage("petDraft.hoursAloneDaily") private var hoursAloneDaily = 2.0
     @AppStorage("petDraft.livingStyle") private var livingStyleRaw = LivingStyle.indoors.rawValue
+    @AppStorage("petDraft.dailyPlayGoalMinutes") private var dailyPlayGoalMinutes = 15
     @State private var limitations: Set<Limitation> = []
     @State private var materials: Set<Material> = [.towel, .cardboard]
     @State private var dayPeriods: Set<DayPeriod> = []
     @State private var scanningBreed = false
     private var species: Species { Species(rawValue: speciesRaw) ?? .dog }
-    private var totalSteps: Int { 8 }
+    private var totalSteps: Int { 9 }
 
     var body: some View {
         NavigationStack {
@@ -192,7 +193,8 @@ struct OnboardingView: View {
         case 3: energyStep
         case 4: rhythmStep
         case 5: routineStep
-        case 6: safetyStep
+        case 6: dailyGoalStep
+        case 7: safetyStep
         default: materialsStep
         }
     }
@@ -332,6 +334,16 @@ struct OnboardingView: View {
             }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
         }
     }
+    private var dailyGoalStep: some View {
+        FormSection(title: "A daily play goal") {
+            Text("Choose a gentle target for time together. Every minute counts, and missing a day never resets anything.").foregroundStyle(.secondary)
+            VStack(spacing: 14) {
+                Text("\(dailyPlayGoalMinutes) minutes").font(.system(.largeTitle, design: .rounded, weight: .bold)).foregroundStyle(Color.sniffPurple)
+                Slider(value: Binding(get: { Double(dailyPlayGoalMinutes) }, set: { dailyPlayGoalMinutes = Int($0.rounded()) }), in: 5...60, step: 5).tint(.sniffPurple)
+                HStack { Text("5 min"); Spacer(); Text("60 min") }.font(.caption).foregroundStyle(.secondary)
+            }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
+        }
+    }
     private func hourPicker(_ title: String, selection: Binding<Int>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.caption.bold()).foregroundStyle(.secondary)
@@ -366,6 +378,7 @@ struct OnboardingView: View {
             pet.dietStyleRaw = dietStyleRaw; pet.foodEnrichmentAllowed = foodEnrichmentAllowed; pet.wakeHour = wakeHour; pet.sleepHour = sleepHour
             pet.hasSnacks = hasSnacks; pet.snacksPerDay = hasSnacks ? snacksPerDay : 0; pet.snackKinds = hasSnacks ? snackKinds.trimmingCharacters(in: .whitespacesAndNewlines) : ""
             pet.hoursAloneDaily = hoursAloneDaily; pet.livingStyleRaw = livingStyleRaw
+            pet.dailyPlayGoalMinutes = dailyPlayGoalMinutes
             try? modelContext.save(); clearDraft(); dismiss()
         }
     }
@@ -402,6 +415,7 @@ struct OnboardingView: View {
         mealsPerDay = 2; firstMealHour = 8; lastMealHour = 18; dietStyleRaw = DietStyle.mixed.rawValue; foodEnrichmentAllowed = true
         hasSnacks = true; snacksPerDay = 2; snackKinds = ""
         wakeHour = 7; sleepHour = 22; hoursAloneDaily = 2; livingStyleRaw = LivingStyle.indoors.rawValue
+        dailyPlayGoalMinutes = 15
     }
 }
 
@@ -670,6 +684,7 @@ struct PetProfileEditorView: View {
     @State private var sensitivities: String
     @State private var health: String
     @State private var situation: String
+    @State private var dailyGoalMinutes: Int
 
     init(pet: PetProfile) {
         self.pet = pet
@@ -678,6 +693,7 @@ struct PetProfileEditorView: View {
         _sensitivities = State(initialValue: pet.sensitivityNote)
         _health = State(initialValue: pet.healthContextNote)
         _situation = State(initialValue: pet.currentSituationNote)
+        _dailyGoalMinutes = State(initialValue: pet.dailyPlayGoalMinutes)
     }
 
     var body: some View {
@@ -686,6 +702,10 @@ struct PetProfileEditorView: View {
                 Section("Current energy") {
                     Picker("Energy", selection: $energyRaw) { ForEach(EnergyLevel.allCases) { Text($0.rawValue.capitalized).tag($0.rawValue) } }
                         .pickerStyle(.segmented)
+                }
+                Section("Daily play goal") {
+                    Stepper("\(dailyGoalMinutes) minutes per day", value: $dailyGoalMinutes, in: 5...60, step: 5)
+                    Text("A flexible target for this pet—not a streak.").font(.caption).foregroundStyle(.secondary)
                 }
                 Section("What Pawprint should know") {
                     TextField("Temperament", text: $temperament, axis: .vertical)
@@ -705,6 +725,7 @@ struct PetProfileEditorView: View {
     private func save() {
         pet.energyRaw = energyRaw; pet.temperamentNote = temperament; pet.sensitivityNote = sensitivities
         pet.healthContextNote = health; pet.currentSituationNote = situation; pet.profileUpdatedAt = .now
+        pet.dailyPlayGoalMinutes = dailyGoalMinutes
         try? modelContext.save(); dismiss()
     }
 }
@@ -848,12 +869,15 @@ struct TodayView: View {
                 Text("\(petSessions.count) plays together").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
             }
             Button { showingProgress = true } label: {
-                HStack(spacing: 9) {
-                    Image(systemName: "clock.fill").foregroundStyle(Color.sniffMango)
-                    Text("\(recentMinutes) min this week").font(.subheadline.bold())
-                    Spacer()
-                    playMixBar.frame(width: 112, height: 8)
-                    Image(systemName: "chevron.right").font(.caption2.bold()).foregroundStyle(Color.sniffPurple)
+                VStack(spacing: 8) {
+                    HStack(spacing: 9) {
+                        Image(systemName: "sun.max.fill").foregroundStyle(Color.sniffMango)
+                        Text("Today: \(todayMinutes) of \(pet.dailyPlayGoalMinutes) min").font(.subheadline.bold())
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.caption2.bold()).foregroundStyle(Color.sniffPurple)
+                    }
+                    ProgressView(value: Double(todayMinutes), total: Double(max(pet.dailyPlayGoalMinutes, 1)))
+                        .tint(todayMinutes >= pet.dailyPlayGoalMinutes ? .sniffMint : .sniffMango)
                 }
                 .foregroundStyle(Color.sniffInk).padding(.horizontal, 12).padding(.vertical, 9)
                 .background(Color.sniffLavender.opacity(0.5), in: Capsule())
@@ -964,10 +988,14 @@ struct TodayView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(pet.name)’s badge book").font(.system(.largeTitle, design: .rounded, weight: .bold))
-                        Text("Little celebrations for showing up together.").foregroundStyle(Color.sniffMuted)
-                    }
+                    VStack(spacing: 10) {
+                        ZStack {
+                            Circle().fill(LinearGradient(colors: [.sniffMango, .sniffPink, .sniffPurple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            Image(systemName: "rosette").font(.system(size: 44, weight: .bold)).foregroundStyle(.white)
+                        }.frame(width: 104, height: 104).shadow(color: Color.sniffPink.opacity(0.28), radius: 16, y: 8)
+                        Text("\(pet.name)’s badge book").font(.system(.largeTitle, design: .rounded, weight: .bold)).multilineTextAlignment(.center)
+                        Text("Every playful moment adds a little sparkle.").foregroundStyle(Color.sniffMuted).multilineTextAlignment(.center)
+                    }.frame(maxWidth: .infinity).padding(.vertical, 8)
                     LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 13) {
                         ForEach(Array(badgeTracks.enumerated()), id: \.element.id) { index, track in
                             badgeTile(track, index: index)
@@ -983,18 +1011,21 @@ struct TodayView: View {
         let colors: [(Color, Color)] = [(.sniffMango, .sniffPink), (.sniffAqua, .sniffSky), (.sniffPurple, .sniffBerry), (.sniffCoral, .sniffMango), (.sniffPink, .sniffPurple), (.sniffMint, .sniffAqua)]
         let pair = colors[index % colors.count]
         let earned = track.earnedLevel != nil
+        let inProgress = !earned && track.current > 0
         return VStack(spacing: 10) {
             ZStack {
-                Circle().fill(LinearGradient(colors: earned ? [pair.0, pair.1] : [Color.sniffLine, Color.sniffLine.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                Circle().fill(LinearGradient(colors: earned ? [pair.0, pair.1] : inProgress ? [pair.0.opacity(0.82), pair.1.opacity(0.68)] : [Color.sniffLine, Color.sniffMuted.opacity(0.42)], startPoint: .topLeading, endPoint: .bottomTrailing))
                 Circle().stroke(.white.opacity(0.7), lineWidth: 3).padding(6)
                 Image(systemName: track.symbol).font(.system(size: 28, weight: .bold)).foregroundStyle(.white)
             }.frame(width: 78, height: 78).shadow(color: earned ? pair.0.opacity(0.25) : .clear, radius: 9, y: 5)
             Text(track.earnedLevel ?? track.nextLevel ?? track.title).font(.subheadline.bold()).multilineTextAlignment(.center).lineLimit(2, reservesSpace: true)
             if earned {
                 Label("Earned", systemImage: "sparkles").font(.caption2.bold()).foregroundStyle(pair.1)
-            } else {
+            } else if inProgress {
                 ProgressView(value: track.progress).tint(pair.0)
                 Text(badgeProgress(track)).font(.caption2).foregroundStyle(Color.sniffMuted)
+            } else {
+                Label("Locked", systemImage: "lock.fill").font(.caption2.bold()).foregroundStyle(Color.sniffMuted)
             }
         }.frame(maxWidth: .infinity, minHeight: 170).padding(14)
             .background(.white.opacity(0.88), in: RoundedRectangle(cornerRadius: 26))
@@ -1103,6 +1134,9 @@ struct TodayView: View {
     }
     private var dayLabels: [String] { (0..<7).reversed().map { offset in let date = calendar.date(byAdding: .day, value: -offset, to: .now) ?? .now; return String(calendar.shortWeekdaySymbols[calendar.component(.weekday, from: date) - 1].prefix(1)) } }
     private var recentMinutes: Int { weeklyMinutes.reduce(0, +) }
+    private var todayMinutes: Int {
+        petSessions.filter { Calendar.current.isDateInToday($0.completedAt) }.reduce(0) { $0 + $1.actualMinutes }
+    }
     private var dueCareTasks: [CareTask] { careTasks.filter { $0.petID == pet.id && $0.isDue } }
     private var careWidgetText: String {
         guard let task = dueCareTasks.first else { return "No reminders right now" }
@@ -1202,7 +1236,7 @@ struct PlayTimeSheet: View {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Best fits").font(.title3.bold())
                             ForEach(suggestions) { suggestion in
-                                NavigationLink { ActivityDetailView(activity: suggestion, pet: pet) } label: {
+                                NavigationLink { ActivityDetailView(activity: suggestion, pet: pet, onComplete: { dismiss() }) } label: {
                                     HStack(spacing: 12) {
                                         Image(suggestion.artworkName).resizable().scaledToFill().frame(width: 68, height: 68).clipped().clipShape(RoundedRectangle(cornerRadius: 16))
                                         VStack(alignment: .leading, spacing: 4) {
@@ -1216,7 +1250,7 @@ struct PlayTimeSheet: View {
                             }
                         }
                     }
-                    NavigationLink { LibraryView(pet: pet) } label: { Label("Browse play library", systemImage: "square.grid.2x2.fill").frame(maxWidth: .infinity) }.buttonStyle(.bordered).tint(.sniffAqua)
+                    NavigationLink { LibraryView(pet: pet, onActivityComplete: { dismiss() }) } label: { Label("Browse play library", systemImage: "square.grid.2x2.fill").frame(maxWidth: .infinity) }.buttonStyle(.bordered).tint(.sniffAqua)
                     Spacer()
                 }.padding(22)
                 }
@@ -1294,8 +1328,14 @@ struct ActivityCard: View {
                     Image(systemName: icon).font(.title2.bold()).foregroundStyle(.white).padding(12)
                         .background(activity.category.accent, in: Circle()).padding(10)
                 }
-            HStack { Text(activity.category.funLabel).badge(color: activity.category.accent); Text("\(activity.durationMinutes) min").badge(color: activity.category.accent) }
+            HStack {
+                Label("\(activity.durationMinutes) min", systemImage: "clock.fill").font(.caption.bold())
+                Spacer()
+                Text(activity.category.funLabel).badge(color: activity.category.accent)
+            }.foregroundStyle(Color.sniffMuted)
             Text(activity.title).font(.system(.title, design: .rounded, weight: .bold))
+            Label(activity.materials.isEmpty ? "No materials needed" : activity.materials.map(\.label).joined(separator: " · "), systemImage: "shippingbox.fill")
+                .font(.caption.weight(.semibold)).foregroundStyle(Color.sniffMuted).lineLimit(2)
             Label("Tap to start", systemImage: "play.fill").font(.subheadline.bold()).foregroundStyle(activity.category.accent)
         }.padding().background(activity.category.softColor, in: RoundedRectangle(cornerRadius: 26)).overlay { RoundedRectangle(cornerRadius: 26).stroke(activity.category.accent.opacity(0.32), lineWidth: 1.5) }.shadow(color: activity.category.accent.opacity(0.18), radius: 18, y: 9)
     }
@@ -1591,28 +1631,50 @@ struct BreedScanPlaceholder: View {
 
 struct LibraryView: View {
     let pet: PetProfile
+    var onActivityComplete: () -> Void = {}
+    @Query(sort: \EnrichmentSession.completedAt, order: .reverse) private var sessions: [EnrichmentSession]
+    @Query private var favorites: [FavoriteActivity]
     @State private var maximumMinutes = 15
-    @State private var category: ActivityCategory?
+    @State private var categories: Set<ActivityCategory> = []
     @State private var material: Material?
     @State private var materialsOnly = false
+    @State private var showingRecommended = true
     private let library = try? ActivityLibrary()
     private var activities: [Activity] {
-        (library?.filteredActivities(for: pet, maximumMinutes: maximumMinutes, category: category, availableMaterialsOnly: materialsOnly) ?? [])
-            .filter { material == nil || $0.materials.contains(material!) }
+        let base = library?.filteredActivities(for: pet, maximumMinutes: maximumMinutes, availableMaterialsOnly: materialsOnly) ?? []
+        let filtered = base.filter { (categories.isEmpty || categories.contains($0.category)) && (material == nil || $0.materials.contains(material!)) }
+        guard showingRecommended, let library else { return filtered }
+        let history = ActivityLibrary.history(for: pet, sessions: sessions)
+        let favoriteIDs = Set(favorites.filter { $0.petID == pet.id }.map(\.activityID))
+        let ranked = library.rankedRecommendations(for: pet, history: history, favorites: favoriteIDs, preferredCategories: categories.isEmpty ? ActivityCategory.allCases : ActivityCategory.allCases.filter(categories.contains), maximumMinutes: maximumMinutes)
+        let order = Dictionary(uniqueKeysWithValues: ranked.enumerated().map { ($0.element.id, $0.offset) })
+        return filtered.sorted { order[$0.id, default: .max] < order[$1.id, default: .max] }
     }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 Text("Play & enrichment").font(.system(.largeTitle, design: .rounded, weight: .bold))
                 Text("Safe play, discovery, and bonding ideas for \(pet.name).").foregroundStyle(.secondary)
+                Picker("Library view", selection: $showingRecommended) {
+                    Text("For \(pet.name)").tag(true)
+                    Text("All safe ideas").tag(false)
+                }.pickerStyle(.segmented)
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("FILTERS").font(.caption.bold()).tracking(1.2).foregroundStyle(Color.sniffBlue)
+                    HStack {
+                        Text("FILTERS").font(.caption.bold()).tracking(1.2).foregroundStyle(Color.sniffBlue)
+                        Spacer()
+                        if hasActiveFilters { Button("Clear") { clearFilters() }.font(.caption.bold()) }
+                    }
                     HStack { Text("Up to \(maximumMinutes) minutes"); Slider(value: Binding(get: { Double(maximumMinutes) }, set: { maximumMinutes = Int($0) }), in: 3...30, step: 1).accessibilityLabel("Maximum activity duration") }
                     Toggle("Only materials we have", isOn: $materialsOnly)
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
-                            FilterChip(title: "All", selected: category == nil) { category = nil }
-                            ForEach(ActivityCategory.allCases) { item in FilterChip(title: item.rawValue.capitalized, selected: category == item) { category = item } }
+                            FilterChip(title: "All types", selected: categories.isEmpty) { categories.removeAll() }
+                            ForEach(ActivityCategory.allCases) { item in
+                                FilterChip(title: item.funLabel, selected: categories.contains(item)) {
+                                    if categories.contains(item) { categories.remove(item) } else { categories.insert(item) }
+                                }
+                            }
                         }
                     }
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -1622,14 +1684,16 @@ struct LibraryView: View {
                         }
                     }.accessibilityLabel("Material filter")
                 }.padding().background(Color.sniffSurface, in: RoundedRectangle(cornerRadius: 18)).overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.sniffLine) }
-                Text("\(activities.count) \(activities.count == 1 ? "idea" : "ideas") for \(pet.name)").font(.subheadline.bold())
+                Text("\(activities.count) \(showingRecommended ? "recommended" : "safe") \(activities.count == 1 ? "idea" : "ideas")").font(.subheadline.bold())
                 if activities.isEmpty { ContentUnavailableView("No matches", systemImage: "line.3.horizontal.decrease.circle", description: Text("Try more time, another category, or include activities needing other materials.")) }
                 ForEach(activities) { activity in
-                    NavigationLink { ActivityDetailView(activity: activity, pet: pet) } label: { ActivityCard(activity: activity) }.buttonStyle(.plain)
+                    NavigationLink { ActivityDetailView(activity: activity, pet: pet, onComplete: onActivityComplete) } label: { ActivityCard(activity: activity) }.buttonStyle(.plain)
                 }
             }.padding()
         }.background(Color.sniffPaper).navigationTitle("Play library").navigationBarTitleDisplayMode(.inline)
     }
+    private var hasActiveFilters: Bool { maximumMinutes != 15 || !categories.isEmpty || material != nil || materialsOnly }
+    private func clearFilters() { maximumMinutes = 15; categories.removeAll(); material = nil; materialsOnly = false }
 }
 
 struct FilterChip: View {
@@ -1643,6 +1707,7 @@ struct ActivityDetailView: View {
     let activity: Activity; let pet: PetProfile
     var combinedSessionID: UUID? = nil
     var combinedActivityIDs: [String] = []
+    var onComplete: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \EnrichmentSession.completedAt, order: .reverse) private var allSessions: [EnrichmentSession]
     @State private var phase: GuidedPhase = .materials
@@ -1681,7 +1746,7 @@ struct ActivityDetailView: View {
             }
             else if phase != .finished { setupSeconds += 1 }
         }
-        .sheet(isPresented: $completing, onDismiss: { if completionSaved { dismiss() } }) {
+        .fullScreenCover(isPresented: $completing, onDismiss: { if completionSaved { onComplete(); dismiss() } }) {
             CompletionView(activity: activity, pet: pet, actualDurationSeconds: playSeconds, combinedSessionID: combinedSessionID, combinedActivityIDs: combinedActivityIDs) { completionSaved = true }
         }
         .alert("Camera preview", isPresented: Binding(get: { mediaMessage != nil }, set: { if !$0 { mediaMessage = nil } })) { Button("Got it") { mediaMessage = nil } } message: { Text(mediaMessage ?? "") }
@@ -1805,6 +1870,8 @@ struct CompletionView: View {
     @State private var reaction: Reaction?
     @State private var note = ""
     @State private var earlyStopReason: EarlyStopReason?
+    @State private var photoItem: PhotosPickerItem?
+    @State private var photoData: Data?
     @State private var addOn: Activity?
     @State private var saved = false
     private var endedEarly: Bool { actualDurationSeconds + 15 < activity.durationMinutes * 60 }
@@ -1812,9 +1879,14 @@ struct CompletionView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    Image(systemName: "heart.circle.fill").font(.system(size: 54)).foregroundStyle(Color.sniffBlue)
-                    Text("A good few minutes.").font(.largeTitle.bold())
-                    Text("How was it for \(pet.name)?").font(.title3).foregroundStyle(.secondary)
+                    VStack(spacing: 10) {
+                        ZStack {
+                            Circle().fill(LinearGradient(colors: [.sniffMango, .sniffPink], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            Image(systemName: "heart.fill").font(.system(size: 42, weight: .bold)).foregroundStyle(.white)
+                        }.frame(width: 104, height: 104).shadow(color: Color.sniffPink.opacity(0.3), radius: 18, y: 9)
+                        Text("\(formatted(actualDurationSeconds)) together!").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        Text("A lovely moment with \(pet.name).").font(.title3).foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity).multilineTextAlignment(.center)
                     HStack {
                         Label("Preset \(activity.durationMinutes) min", systemImage: "flag.fill")
                         Spacer()
@@ -1841,7 +1913,12 @@ struct CompletionView: View {
                         .lineLimit(2...5).padding(15)
                         .background(Color.sniffSurface, in: RoundedRectangle(cornerRadius: 18))
                         .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.sniffLine) }
-                    Button("Save memory") { save() }.buttonStyle(PrimaryButtonStyle()).disabled(reaction == nil || (endedEarly && earlyStopReason == nil))
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        Label(photoData == nil ? "Add a photo memory" : "Photo added", systemImage: photoData == nil ? "photo.badge.plus" : "checkmark.circle.fill")
+                            .frame(maxWidth: .infinity)
+                    }.buttonStyle(.bordered).tint(.sniffPurple)
+                        .onChange(of: photoItem) { _, item in loadPhoto(item) }
+                    Button("Save and return home") { save() }.buttonStyle(PrimaryButtonStyle()).disabled(reaction == nil || (endedEarly && earlyStopReason == nil))
                     if let suggestion = compatibleAddOn {
                         Button { saveAndAdd(suggestion) } label: { Label("Add another activity", systemImage: "plus.circle.fill") }
                             .buttonStyle(.bordered).tint(.sniffAqua)
@@ -1872,8 +1949,12 @@ struct CompletionView: View {
     }
     private func persist(reaction: Reaction, groupID: UUID?, activityIDs: [String]) {
         guard !saved else { return }
-        modelContext.insert(EnrichmentSession(activity: activity, pet: pet, reaction: reaction, note: note, actualDurationSeconds: actualDurationSeconds, earlyStopReason: earlyStopReason, combinedSessionID: groupID, combinedActivityIDs: activityIDs))
+        modelContext.insert(EnrichmentSession(activity: activity, pet: pet, reaction: reaction, note: note, photoData: photoData, actualDurationSeconds: actualDurationSeconds, earlyStopReason: earlyStopReason, combinedSessionID: groupID, combinedActivityIDs: activityIDs))
         try? modelContext.save(); saved = true
+    }
+    private func loadPhoto(_ item: PhotosPickerItem?) {
+        guard let item else { return }
+        Task { if let data = try? await item.loadTransferable(type: Data.self) { await MainActor.run { photoData = data } } }
     }
     private func formatted(_ seconds: Int) -> String { String(format: "%d:%02d", seconds / 60, seconds % 60) }
 }
