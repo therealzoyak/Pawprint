@@ -1384,8 +1384,11 @@ struct FetchView: View {
     @Query private var favorites: [FavoriteActivity]
     @State private var prompt = ""
     @State private var answer: String?
+    @State private var isThinking = false
+    @State private var errorMessage: String?
     @FocusState private var focused: Bool
     private let library = try? ActivityLibrary()
+    private let ai = FetchAIService()
     private let suggestions = ["Something quick", "Use what I have", "Help them settle", "Make it harder"]
 
     var body: some View {
@@ -1396,7 +1399,17 @@ struct FetchView: View {
                     VStack(alignment: .leading, spacing: 22) {
                         PetPageHeader(pet: pet, eyebrow: "PET-SMART IDEAS", title: "Ask Fetch", subtitle: "A playful helper that already knows \(pet.name)’s setup.", color: .sniffPurple, icon: "bubble.left.fill")
 
-                        if answer == nil {
+                        if isThinking {
+                            HStack(spacing: 13) {
+                                FetchSpark(size: 38)
+                                ProgressView()
+                                Text("Finding a thoughtful fit for \(pet.name)…")
+                                    .font(.system(.body, design: .rounded, weight: .medium))
+                                    .foregroundStyle(Color.sniffMuted)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(20)
+                            .background(.white.opacity(0.94), in: RoundedRectangle(cornerRadius: 26))
+                        } else if answer == nil {
                             VStack(spacing: 11) {
                                 Image(systemName: "pawprint.fill").font(.system(size: 38, weight: .bold)).foregroundStyle(Color.sniffPurple)
                                 Text("What would help right now?").font(.system(.title2, design: .rounded, weight: .bold))
@@ -1414,7 +1427,7 @@ struct FetchView: View {
 
                         Menu {
                             ForEach(suggestions, id: \.self) { suggestion in
-                                Button(suggestion) { prompt = suggestion; ask() }
+                                Button(suggestion) { prompt = suggestion; Task { await ask() } }
                             }
                         } label: {
                             Label("Try a quick prompt", systemImage: "sparkles")
@@ -1424,20 +1437,33 @@ struct FetchView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
 
                         VStack(alignment: .leading, spacing: 10) {
-                            HStack(alignment: .bottom, spacing: 10) {
+                            ZStack(alignment: .trailing) {
                                 TextField("Ask about \(pet.name)…", text: $prompt, axis: .vertical)
-                                    .focused($focused).lineLimit(1...5).submitLabel(.send).onSubmit(ask)
-                                Button(action: ask) {
+                                    .focused($focused)
+                                    .lineLimit(1...5)
+                                    .submitLabel(.send)
+                                    .onSubmit { Task { await ask() } }
+                                    .padding(.leading, 16)
+                                    .padding(.trailing, 58)
+                                    .padding(.vertical, 15)
+                                Button { Task { await ask() } } label: {
                                     Image(systemName: "pawprint.fill").font(.headline).frame(width: 38, height: 38)
                                         .background(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.sniffLavender : Color.sniffPurple, in: Circle())
                                         .foregroundStyle(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.sniffMuted : .white)
-                                }.buttonStyle(.plain).disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.trailing, 9)
+                                .disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isThinking)
                             }
-                            .padding(.leading, 8).padding(.trailing, 7).padding(.vertical, 8)
+                            .frame(minHeight: 58)
                             .background(.white, in: RoundedRectangle(cornerRadius: 24))
                             .overlay { RoundedRectangle(cornerRadius: 24).stroke(focused ? Color.sniffPurple : Color.sniffLine, lineWidth: focused ? 2 : 1) }
                             .shadow(color: Color.sniffPurple.opacity(focused ? 0.14 : 0.08), radius: 16, y: 7)
-                            Text("Suggestions come from Pawprint’s reviewed play library.").font(.caption2).foregroundStyle(Color.sniffMuted).padding(.leading, 8)
+                            .disabled(isThinking)
+                            Text(errorMessage ?? "AI suggestions stay inside Pawprint’s reviewed, pet-safe activity library.")
+                                .font(.caption2)
+                                .foregroundStyle(errorMessage == nil ? Color.sniffMuted : Color.sniffCoral)
+                                .padding(.leading, 8)
                         }
                     }.padding()
                 }.scrollIndicators(.visible).scrollBounceBehavior(.always).scrollDismissesKeyboard(.interactively)
@@ -1446,38 +1472,41 @@ struct FetchView: View {
         }.navigationBarTitleDisplayMode(.inline)
     }
 
-    private func ask() {
+    @MainActor private func ask() async {
         let question = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !question.isEmpty else { return }
-        let lower = question.lowercased()
-        let categoryWords: [(ActivityCategory, [String])] = [
-            (.calming, ["settle", "calm", "quiet", "anxious", "tired", "gentle"]),
-            (.physical, ["run", "move", "active", "zoom", "energy", "chase"]),
-            (.cognitive, ["hard", "challenge", "brain", "puzzle", "smart", "bored"]),
-            (.foraging, ["sniff", "food", "treat", "hungry", "search"]),
-            (.social, ["bond", "together", "cuddle", "attention"]),
-            (.sensory, ["explore", "sound", "texture", "curious", "new"])
-        ]
-        let requestedCategories = categoryWords.filter { $0.1.contains(where: lower.contains) }.map(\.0)
-        let statedMinutes = lower.split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) }.first
-        let timeLimit: Int?
-        if let statedMinutes { timeLimit = statedMinutes }
-        else if lower.contains("quick") { timeLimit = 5 }
-        else { timeLimit = nil }
+        guard !question.isEmpty, !isThinking else { return }
         let history = ActivityLibrary.history(for: pet, sessions: sessions)
         let favoriteIDs = Set(favorites.filter { $0.petID == pet.id }.map(\.activityID))
-        var ranked = library?.rankedRecommendations(for: pet, history: history, favorites: favoriteIDs, preferredCategories: requestedCategories, maximumMinutes: timeLimit) ?? []
-        if lower.contains("hard") || lower.contains("challenge") { ranked.sort { $0.tier == $1.tier ? $0.durationMinutes < $1.durationMinutes : $0.tier > $1.tier } }
-        if let requestedMaterial = pet.materials.first(where: { lower.contains($0.label.lowercased()) || lower.contains($0.rawValue.replacingOccurrences(of: "_", with: " ")) }) {
-            ranked = ranked.filter { $0.materials.contains(requestedMaterial) } + ranked.filter { !$0.materials.contains(requestedMaterial) }
+        let ranked = library?.rankedRecommendations(for: pet, history: history, favorites: favoriteIDs) ?? []
+        let candidates = ranked.prefix(16).map {
+            FetchAICandidate(id: $0.id, title: $0.displayTitle, description: $0.description, category: $0.category.rawValue, durationMinutes: $0.durationMinutes, materials: $0.materials.map(\.label))
         }
-        let match = ranked.first
-        if let match {
-            answer = "Try \(match.displayTitle). It takes about \(match.durationMinutes) minutes and uses \(match.materials.map(\.label).joined(separator: ", ")). \(match.description) Open Play when you’re ready for the steps."
-        } else {
-            answer = "I couldn’t find a match using \(pet.name)’s current materials. Add another material to their setup, or ask me for a simpler version."
+        guard !candidates.isEmpty else {
+            errorMessage = "Add a few materials to \(pet.name)’s profile so Fetch has safe options to choose from."
+            return
         }
-        prompt = ""; focused = false
+
+        isThinking = true
+        errorMessage = nil
+        focused = false
+        do {
+            let result = try await ai.ask(FetchAIRequest(
+                question: question,
+                petName: pet.name,
+                species: pet.species.rawValue,
+                age: pet.ageBand.rawValue,
+                energy: pet.energy.rawValue,
+                limitations: pet.limitations.map(\.label).sorted(),
+                availableMaterials: pet.materials.map(\.label).sorted(),
+                candidates: candidates
+            ))
+            guard candidates.contains(where: { $0.id == result.activityID }) else { throw FetchAIError.invalidResponse }
+            answer = result.answer
+            prompt = ""
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? "Fetch couldn’t answer right now. Please try again."
+        }
+        isThinking = false
     }
 }
 
