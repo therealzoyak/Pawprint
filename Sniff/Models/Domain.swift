@@ -294,8 +294,8 @@ struct Activity: Codable, Identifiable, Hashable {
     let energyLevels: [EnergyLevel]
     let exclusions: [Limitation]
 
-    /// Prefer artwork that depicts the actual game. The category image remains a
-    /// dependable fallback as the activity library grows.
+    /// Prefer artwork that depicts the actual game. The scene library uses the
+    /// activity's props and setting before falling back to a category-fit scene.
     var artworkName: String {
         let visualClues = ([id, title] + materials.map(\.label))
             .joined(separator: " ")
@@ -303,22 +303,48 @@ struct Activity: Codable, Identifiable, Hashable {
 
         switch species {
         case .dog:
-            if visualClues.containsAny(of: ["towel", "blanket fold", "snuffle"]) {
-                return "ActivityVisual-dog-towel"
-            }
-            if visualClues.containsAny(of: ["ball", "fetch", "frisbee", "disc", "chase"]) {
-                return "ActivityVisual-dog-ball"
+            if visualClues.containsAny(of: ["hurdle", "agility"]) { return "ActivityScene-dog-hurdle-beach" }
+            if visualClues.containsAny(of: ["flirt pole", "flirt-pole"]) { return "ActivityScene-dog-flirt-home" }
+            if visualClues.containsAny(of: ["tug", "rope"]) { return "ActivityScene-dog-tug-park" }
+            if visualClues.containsAny(of: ["rubber bone", "bone dash"]) { return "ActivityScene-dog-bone-trail" }
+            if visualClues.containsAny(of: ["stick", "obstacle"]) { return "ActivityScene-dog-obstacle-stick" }
+            if visualClues.containsAny(of: ["sprinkler", "water play", "splash"]) { return "ActivityScene-dog-sprinkler-yard" }
+            if visualClues.containsAny(of: ["frisbee", "flying disc", "disc flight"]) { return "ActivityScene-dog-frisbee-park" }
+            if visualClues.containsAny(of: ["towel", "blanket fold", "snuffle"]) { return "ActivityScene-dog-towel-search" }
+            if visualClues.containsAny(of: ["cardboard", "scent garden", "sniff box"]) { return "ActivityScene-dog-scent-box" }
+            if visualClues.containsAny(of: ["cup", "which cup"]) { return "ActivityScene-dog-cup-choice" }
+            if visualClues.containsAny(of: ["blanket", "settle", "quiet pause"]) { return "ActivityScene-dog-blanket-calm" }
+            if visualClues.containsAny(of: ["ball", "fetch", "chase"]) { return "ActivityScene-dog-ball-park" }
+            switch category {
+            case .physical: return "ActivityScene-dog-ball-park"
+            case .foraging: return "ActivityScene-dog-towel-search"
+            case .sensory: return "ActivityScene-dog-scent-box"
+            case .cognitive: return "ActivityScene-dog-cup-choice"
+            case .social: return "ActivityScene-dog-tug-park"
+            case .calming: return "ActivityScene-dog-blanket-calm"
             }
         case .cat:
-            if visualClues.containsAny(of: ["cardboard", "box", "paper", "bag"]) {
-                return "ActivityVisual-cat-cardboard"
-            }
-            if visualClues.containsAny(of: ["wand", "feather", "pounce", "chase", "flirt pole"]) {
-                return "ActivityVisual-cat-wand"
+            if visualClues.containsAny(of: ["wand", "feather", "flirt pole", "pounce"]) { return "ActivityScene-cat-wand" }
+            if visualClues.containsAny(of: ["cardboard", "box", "lookout"]) { return "ActivityScene-cat-cardboard" }
+            if visualClues.containsAny(of: ["cup", "shell game"]) { return "ActivityScene-cat-cup-puzzle" }
+            if visualClues.containsAny(of: ["paper bag", "bag tunnel", "tunnel"]) { return "ActivityScene-cat-bag-tunnel" }
+            if visualClues.containsAny(of: ["kibble", "food trail", "treat trail"]) { return "ActivityScene-cat-kibble-trail" }
+            if visualClues.containsAny(of: ["blanket", "cave", "hideaway"]) { return "ActivityScene-cat-blanket-cave" }
+            if visualClues.containsAny(of: ["paper", "crinkle", "rustle"]) { return "ActivityScene-cat-paper-rustle" }
+            if visualClues.containsAny(of: ["slow blink", "slow-blink", "cheek rub", "together"]) { return "ActivityScene-cat-slow-blink" }
+            if visualClues.containsAny(of: ["tower", "climb", "vertical"]) { return "ActivityScene-cat-tower-climb" }
+            if visualClues.containsAny(of: ["shadow", "light watch", "sunbeam"]) { return "ActivityScene-cat-shadow-watch" }
+            if visualClues.containsAny(of: ["window", "settle", "quiet pause"]) { return "ActivityScene-cat-window-calm" }
+            if visualClues.containsAny(of: ["ball", "chase"]) { return "ActivityScene-cat-ball-hall" }
+            switch category {
+            case .physical: return "ActivityScene-cat-wand"
+            case .foraging: return "ActivityScene-cat-kibble-trail"
+            case .sensory: return "ActivityScene-cat-shadow-watch"
+            case .cognitive: return "ActivityScene-cat-cup-puzzle"
+            case .social: return "ActivityScene-cat-slow-blink"
+            case .calming: return "ActivityScene-cat-window-calm"
             }
         }
-
-        return "Activity-\(species.rawValue)-\(category.rawValue)"
     }
 
     /// Routine handling belongs in Care, even when an older catalog record was

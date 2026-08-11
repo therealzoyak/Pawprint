@@ -2105,7 +2105,7 @@ struct ActivityDetailView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .navigationBarBackButtonHidden(phase == .playing)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { if phase != .playing { Button { dismiss() } label: { Image(systemName: "xmark") } } }
             ToolbarItem(placement: .topBarTrailing) {
@@ -2152,7 +2152,7 @@ struct ActivityDetailView: View {
         }
     }
     private var materialScreen: some View {
-        GuidedMoment(icon: "shippingbox.fill", color: flowColor, eyebrow: hasPlayedBefore ? "WELCOME BACK" : "FIRST, GRAB THIS", title: activity.materials.isEmpty ? "Just you and \(pet.name)" : activity.materials.map(\.label).joined(separator: " + "), detail: hasPlayedBefore ? "You’ve done this one before, so you can jump right in." : "Bring everything nearby so play can stay uninterrupted.") {
+        GuidedMoment(icon: "shippingbox.fill", artworkName: activity.artworkName, color: flowColor, eyebrow: hasPlayedBefore ? "WELCOME BACK" : "FIRST, GRAB THIS", title: activity.materials.isEmpty ? "Just you and \(pet.name)" : activity.materials.map(\.label).joined(separator: " + "), detail: hasPlayedBefore ? "You’ve done this one before, so you can jump right in." : "Bring everything nearby so play can stay uninterrupted.") {
             if hasPlayedBefore {
                 VStack(spacing: 10) {
                     Button("Start again") { withAnimation { phase = .playing } }.buttonStyle(PrimaryButtonStyle())
@@ -2164,14 +2164,14 @@ struct ActivityDetailView: View {
         }
     }
     private func stepScreen(_ index: Int) -> some View {
-        GuidedMoment(icon: stepIcon(index), color: flowColor, eyebrow: "SETUP · \(index + 1) OF \(activity.steps.count)", title: activity.steps[index], detail: index == 0 ? "No rush. \(pet.name) can watch while you get ready." : "Perfect. Keep it simple and let curiosity do the work.") {
+        GuidedMoment(icon: stepIcon(index), artworkName: activity.artworkName, color: flowColor, eyebrow: "SETUP · \(index + 1) OF \(activity.steps.count)", title: activity.steps[index], detail: index == 0 ? "No rush. \(pet.name) can watch while you get ready." : "Perfect. Keep it simple and let curiosity do the work.") {
             Button(index == activity.steps.count - 1 ? "We’re ready" : "Got it—next") {
                 if index + 1 < activity.steps.count { withAnimation { phase = .step(index + 1) } } else { withAnimation { phase = .ready } }
             }.buttonStyle(PrimaryButtonStyle())
         }
     }
     private var readyScreen: some View {
-        GuidedMoment(icon: "heart.fill", color: .sniffPink, eyebrow: "SETUP TOOK \(formatted(setupSeconds))", title: "Ready when \(pet.name) is", detail: "The play timer starts only when you tap below. Stop anytime they lose interest.") {
+        GuidedMoment(icon: "play.fill", artworkName: activity.artworkName, color: .sniffPink, eyebrow: "SETUP TOOK \(formatted(setupSeconds))", title: "Ready when \(pet.name) is", detail: "The play timer starts only when you tap below. Stop anytime they lose interest.") {
             Button { withAnimation { phase = .playing } } label: { Label("Start playtime", systemImage: "play.fill") }.buttonStyle(PrimaryButtonStyle())
         }
     }
@@ -2206,7 +2206,7 @@ struct ActivityDetailView: View {
         }.padding()
     }
     private var finishedScreen: some View {
-        GuidedMoment(icon: "checkmark", color: flowColor, eyebrow: "ACTIVITY COMPLETE · \(formatted(playSeconds))", title: "You showed up for \(pet.name)", detail: "That play time supported their enrichment and your bond.") {
+        GuidedMoment(icon: "checkmark", artworkName: activity.artworkName, color: flowColor, eyebrow: "ACTIVITY COMPLETE · \(formatted(playSeconds))", title: "You showed up for \(pet.name)", detail: "That play time supported their enrichment and your bond.") {
             Button("Finish and save") { completing = true }.buttonStyle(PrimaryButtonStyle())
         }
     }
@@ -2218,16 +2218,24 @@ struct ActivityDetailView: View {
 }
 
 struct GuidedMoment<Actions: View>: View {
-    let icon: String; let color: Color; let eyebrow: String; let title: String; let detail: String; let actions: Actions
-    init(icon: String, color: Color, eyebrow: String, title: String, detail: String, @ViewBuilder actions: () -> Actions) { self.icon = icon; self.color = color; self.eyebrow = eyebrow; self.title = title; self.detail = detail; self.actions = actions() }
+    let icon: String; var artworkName: String? = nil; let color: Color; let eyebrow: String; let title: String; let detail: String; let actions: Actions
+    init(icon: String, artworkName: String? = nil, color: Color, eyebrow: String, title: String, detail: String, @ViewBuilder actions: () -> Actions) { self.icon = icon; self.artworkName = artworkName; self.color = color; self.eyebrow = eyebrow; self.title = title; self.detail = detail; self.actions = actions() }
     var body: some View {
         VStack(spacing: 22) {
             Spacer()
             ZStack(alignment: .bottomTrailing) {
-                Circle().fill(.white).overlay(Circle().stroke(color.opacity(0.28), lineWidth: 1))
-                Image(systemName: icon).font(.system(size: 38, weight: .regular)).foregroundStyle(color)
+                if let artworkName {
+                    Image(artworkName).resizable().scaledToFill()
+                } else {
+                    Color.white
+                    Image(systemName: icon).font(.system(size: 38, weight: .regular)).foregroundStyle(color)
+                }
+                Image(systemName: icon).font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
+                    .frame(width: 34, height: 34).background(color, in: Circle()).overlay(Circle().stroke(.white, lineWidth: 2))
             }
-                .frame(width: 116, height: 116).shadow(color: color.opacity(0.14), radius: 18, y: 9)
+                .frame(width: 150, height: 150).clipShape(RoundedRectangle(cornerRadius: 34))
+                .overlay { RoundedRectangle(cornerRadius: 34).stroke(color.opacity(0.28), lineWidth: 1) }
+                .shadow(color: color.opacity(0.14), radius: 18, y: 9)
                 .phaseAnimator([false, true]) { content, active in content.offset(y: active ? -3 : 2) } animation: { _ in .easeInOut(duration: 1.55) }
             Text(eyebrow).font(.caption.bold()).tracking(1.3).foregroundStyle(color)
             Text(title).font(.system(size: 34, weight: .bold, design: .default)).multilineTextAlignment(.center).lineLimit(4).minimumScaleFactor(0.72)
@@ -2253,6 +2261,7 @@ struct CompletionView: View {
     @State private var photoData: Data?
     @State private var addOn: Activity?
     @State private var saved = false
+    @FocusState private var noteFocused: Bool
     private var endedEarly: Bool { actualDurationSeconds + 15 < activity.durationMinutes * 60 }
     var body: some View {
         NavigationStack {
@@ -2292,6 +2301,7 @@ struct CompletionView: View {
                         .lineLimit(2...5).padding(15)
                         .background(Color.sniffSurface, in: RoundedRectangle(cornerRadius: 18))
                         .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.sniffLine) }
+                        .focused($noteFocused)
                     PhotosPicker(selection: $photoItem, matching: .images) {
                         Label(photoData == nil ? "Add a photo memory" : "Photo added", systemImage: photoData == nil ? "photo.badge.plus" : "checkmark.circle.fill")
                             .frame(maxWidth: .infinity)
@@ -2299,13 +2309,30 @@ struct CompletionView: View {
                         .onChange(of: photoItem) { _, item in loadPhoto(item) }
                     Button("Save and return home") { save() }.buttonStyle(PrimaryButtonStyle()).disabled(reaction == nil || (endedEarly && earlyStopReason == nil))
                     if let suggestion = compatibleAddOn {
-                        Button { saveAndAdd(suggestion) } label: { Label("Add another activity", systemImage: "plus.circle.fill") }
-                            .buttonStyle(.bordered).tint(.sniffAqua)
-                            .disabled(reaction == nil || (endedEarly && earlyStopReason == nil))
-                        Text("Optional · \(suggestion.durationMinutes) min · \(suggestion.displayTitle)").font(.caption).foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Still feeling playful?").font(.headline)
+                            Button { saveAndAdd(suggestion) } label: {
+                                HStack(spacing: 12) {
+                                    Image(suggestion.artworkName).resizable().scaledToFill().frame(width: 62, height: 62).clipShape(RoundedRectangle(cornerRadius: 16))
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(suggestion.displayTitle).font(.headline).foregroundStyle(Color.sniffInk).lineLimit(2)
+                                        Text("\(suggestion.durationMinutes) min · \(suggestion.category.funLabel)").font(.caption.bold()).foregroundStyle(Color.sniffAqua)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "arrow.right.circle.fill").font(.title2).foregroundStyle(Color.sniffAqua)
+                                }.padding(11).background(Color.sniffAqua.opacity(0.1), in: RoundedRectangle(cornerRadius: 22))
+                            }.buttonStyle(.plain).disabled(reaction == nil || (endedEarly && earlyStopReason == nil))
+                        }
                     }
                 }.padding()
-            }.background(Color.sniffPaper).navigationTitle("Done").navigationBarTitleDisplayMode(.inline)
+            }.scrollDismissesKeyboard(.interactively).background(Color.sniffPaper)
+                .onTapGesture { noteFocused = false }
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { noteFocused = false }
+                    }
+                }
         }.fullScreenCover(item: $addOn) { next in
             NavigationStack { ActivityDetailView(activity: next, pet: pet, combinedSessionID: combinedSessionID ?? sessionGroupID, combinedActivityIDs: [activity.id, next.id]) }
         }
