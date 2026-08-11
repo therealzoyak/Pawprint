@@ -1651,12 +1651,10 @@ struct FetchView: View {
     @Query private var favorites: [FavoriteActivity]
     @State private var prompt = ""
     @State private var answer: String?
-    @State private var isThinking = false
-    @State private var errorMessage: String?
     @FocusState private var focused: Bool
     private let library = try? ActivityLibrary()
-    private let ai = FetchAIService()
-    private let suggestions = ["Something quick", "Use what I have", "Help them settle", "Make it harder"]
+    private let assistant = FetchAssistant()
+    private let suggestions = ["Something quick", "Use what I have", "Help them settle", "Give me name ideas"]
 
     var body: some View {
         ZStack {
@@ -1666,17 +1664,7 @@ struct FetchView: View {
                     VStack(alignment: .leading, spacing: 22) {
                         PetPageHeader(pet: pet, eyebrow: "PET-SMART IDEAS", title: "Ask Fetch", subtitle: "A playful helper that already knows \(pet.name)’s setup.", color: .sniffPurple, icon: "bubble.left.fill")
 
-                        if isThinking {
-                            HStack(spacing: 13) {
-                                FetchSpark(size: 38)
-                                ProgressView()
-                                Text("Finding a thoughtful fit for \(pet.name)…")
-                                    .font(.system(.body, design: .rounded, weight: .medium))
-                                    .foregroundStyle(Color.sniffMuted)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading).padding(20)
-                            .background(.white.opacity(0.94), in: RoundedRectangle(cornerRadius: 26))
-                        } else if answer == nil {
+                        if answer == nil {
                             VStack(spacing: 11) {
                                 Image(systemName: "pawprint.fill").font(.system(size: 38, weight: .bold)).foregroundStyle(Color.sniffPurple)
                                 Text("What would help right now?").font(.system(.title2, design: .default, weight: .bold))
@@ -1694,7 +1682,7 @@ struct FetchView: View {
 
                         Menu {
                             ForEach(suggestions, id: \.self) { suggestion in
-                                Button(suggestion) { prompt = suggestion; Task { await ask() } }
+                                Button(suggestion) { prompt = suggestion; ask() }
                             }
                         } label: {
                             Label("Try a quick prompt", systemImage: "sparkles")
@@ -1709,27 +1697,26 @@ struct FetchView: View {
                                     .focused($focused)
                                     .lineLimit(1...5)
                                     .submitLabel(.send)
-                                    .onSubmit { Task { await ask() } }
+                                    .onSubmit(ask)
                                     .padding(.leading, 16)
                                     .padding(.trailing, 58)
                                     .padding(.vertical, 15)
-                                Button { Task { await ask() } } label: {
+                                Button(action: ask) {
                                     Image(systemName: "pawprint.fill").font(.headline).frame(width: 38, height: 38)
                                         .background(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.sniffLavender : Color.sniffPurple, in: Circle())
                                         .foregroundStyle(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.sniffMuted : .white)
                                 }
                                 .buttonStyle(.plain)
                                 .padding(.trailing, 9)
-                                .disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isThinking)
+                                .disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                             }
                             .frame(minHeight: 58)
                             .background(.white, in: RoundedRectangle(cornerRadius: 24))
                             .overlay { RoundedRectangle(cornerRadius: 24).stroke(focused ? Color.sniffPurple : Color.sniffLine, lineWidth: focused ? 2 : 1) }
                             .shadow(color: Color.sniffPurple.opacity(focused ? 0.14 : 0.08), radius: 16, y: 7)
-                            .disabled(isThinking)
-                            Text(errorMessage ?? "AI suggestions stay inside Pawprint’s reviewed, pet-safe activity library.")
+                            Text("Fetch understands activities, constraints, profile questions, and pet-name requests—all on this device.")
                                 .font(.caption2)
-                                .foregroundStyle(errorMessage == nil ? Color.sniffMuted : Color.sniffCoral)
+                                .foregroundStyle(Color.sniffMuted)
                                 .padding(.leading, 8)
                         }
                     }.padding()
@@ -1739,41 +1726,16 @@ struct FetchView: View {
         }.navigationBarTitleDisplayMode(.inline)
     }
 
-    @MainActor private func ask() async {
+    private func ask() {
         let question = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !question.isEmpty, !isThinking else { return }
+        guard !question.isEmpty else { return }
         let history = ActivityLibrary.history(for: pet, sessions: sessions)
         let favoriteIDs = Set(favorites.filter { $0.petID == pet.id }.map(\.activityID))
         let ranked = library?.rankedRecommendations(for: pet, history: history, favorites: favoriteIDs) ?? []
-        let candidates = ranked.prefix(16).map {
-            FetchAICandidate(id: $0.id, title: $0.displayTitle, description: $0.description, category: $0.category.rawValue, durationMinutes: $0.durationMinutes, materials: $0.materials.map(\.label))
-        }
-        guard !candidates.isEmpty else {
-            errorMessage = "Add a few materials to \(pet.name)’s profile so Fetch has safe options to choose from."
-            return
-        }
-
-        isThinking = true
-        errorMessage = nil
+        let result = assistant.reply(to: question, pet: pet, candidates: Array(ranked.prefix(24)))
+        answer = result.text
+        prompt = ""
         focused = false
-        do {
-            let result = try await ai.ask(FetchAIRequest(
-                question: question,
-                petName: pet.name,
-                species: pet.species.rawValue,
-                age: pet.ageBand.rawValue,
-                energy: pet.energy.rawValue,
-                limitations: pet.limitations.map(\.label).sorted(),
-                availableMaterials: pet.materials.map(\.label).sorted(),
-                candidates: candidates
-            ))
-            guard candidates.contains(where: { $0.id == result.activityID }) else { throw FetchAIError.invalidResponse }
-            answer = result.answer
-            prompt = ""
-        } catch {
-            errorMessage = (error as? LocalizedError)?.errorDescription ?? "Fetch couldn’t answer right now. Please try again."
-        }
-        isThinking = false
     }
 }
 
