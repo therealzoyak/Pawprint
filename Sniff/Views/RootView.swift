@@ -161,7 +161,7 @@ struct OnboardingView: View {
     private var species: Species { Species(rawValue: speciesRaw) ?? .dog }
     private var activityGoal: ActivityGoal { ActivityGoal(rawValue: activityGoalRaw) ?? .maintain }
     private var petName: String { name.isEmpty ? "your pet" : name }
-    private var totalSteps: Int { 16 }
+    private var totalSteps: Int { 5 }
     private var playFrequency: PlayFrequency { PlayFrequency(rawValue: playFrequencyRaw) ?? .occasionally }
     private var breedProfile: BreedProfile? { BreedProfile.all.first { $0.species == species && $0.name == breedDraft } }
 
@@ -213,20 +213,9 @@ struct OnboardingView: View {
     @ViewBuilder private var stepContent: some View {
         switch step {
         case 0: speciesStep
-        case 1: identityStep
+        case 1: essentialsStep
         case 2: breedStep
-        case 3: ageStep
-        case 4: weightStep
-        case 5: observationStep(title: "How often does \(petName) ask to play?", low: "Hardly ever", high: "Constantly", value: $playDrive, color: .sniffCoral)
-        case 6: observationStep(title: "Once interested, how long do they keep going?", low: "A minute or two", high: "A long while", value: $stamina, color: .sniffMint)
-        case 7: observationStep(title: "After excitement, how easily do they relax?", low: "Needs support", high: "Settles easily", value: $settleEase, color: .sniffPurple)
-        case 8: playHabitStep
-        case 9: goalStep
-        case 10: rhythmStep
-        case 11: foodStep
-        case 12: homeRoutineStep
-        case 13: safetyStep
-        case 14: materialsStep
+        case 3: playHabitStep
         default: dailyGoalStep
         }
     }
@@ -276,6 +265,22 @@ struct OnboardingView: View {
             }
         }
     }
+    private var essentialsStep: some View {
+        QuestionScreen(color: .sniffLavender, symbol: species == .cat ? "cat.fill" : "dog.fill", title: "Tell us the basics", subtitle: "Enough to make the first plan safe and useful.") {
+            HStack(spacing: 10) {
+                Image(systemName: "pawprint.fill").foregroundStyle(Color.sniffPurple)
+                TextField("Their name", text: $name).textContentType(.name).font(.headline)
+            }.padding(13).background(.white, in: RoundedRectangle(cornerRadius: 17))
+            VStack(alignment: .leading, spacing: 6) {
+                HStack { Text("Age").font(.headline); Spacer(); Text(ageLabel).foregroundStyle(Color.sniffPurple) }
+                SmartSlider(value: $ageYears, range: 0.25...22, step: 0.25, color: .sniffPurple)
+            }.padding(13).background(.white, in: RoundedRectangle(cornerRadius: 17))
+            VStack(alignment: .leading, spacing: 6) {
+                HStack { Text("Weight").font(.headline); Spacer(); Text("\(Int(weightPounds.rounded())) lb").foregroundStyle(Color.sniffMint) }
+                SmartSlider(value: $weightPounds, range: 2...weightMaximum, step: 1, color: .sniffMint)
+            }.padding(13).background(.white, in: RoundedRectangle(cornerRadius: 17))
+        }
+    }
     private var ageAndSizeStep: some View {
         FormSection(title: "The useful basics") {
             Text("Exact answers help us avoid activities that are too easy, tiring, or awkward.").foregroundStyle(.secondary)
@@ -323,11 +328,11 @@ struct OnboardingView: View {
         }
     }
     private var playHabitStep: some View {
-        QuestionScreen(color: .sniffPeach, symbol: "figure.play", title: "How often does active play happen now?", subtitle: "Think of chasing, pouncing, fetching, or energetic toy play—not cuddling or wandering around.") {
+        QuestionScreen(color: .sniffPeach, symbol: "figure.play", title: "How often do they actively play?", subtitle: "A quick baseline. Pawprint will learn the details later.") {
             ForEach(PlayFrequency.allCases) { item in
                 Button { playFrequencyRaw = item.rawValue } label: {
                     HStack { VStack(alignment: .leading, spacing: 3) { Text(item.label).font(.headline); Text(item.detail).font(.caption).foregroundStyle(.secondary) }; Spacer(); if playFrequency == item { Image(systemName: "checkmark.circle.fill") } }
-                        .padding().background(playFrequency == item ? Color.sniffCoral.opacity(0.15) : .white, in: RoundedRectangle(cornerRadius: 20))
+                        .padding(.horizontal, 14).padding(.vertical, 10).background(playFrequency == item ? Color.sniffCoral.opacity(0.15) : .white, in: RoundedRectangle(cornerRadius: 17))
                 }.buttonStyle(.plain).sensoryFeedback(.selection, trigger: playFrequency == item)
             }
         }
@@ -438,8 +443,7 @@ struct OnboardingView: View {
         }
     }
     private var dailyGoalStep: some View {
-        FormSection(title: "\(petName)’s starting plan") {
-            Text("Pawprint used age, size, current habits, energy, routine, and your goal. This is a flexible enrichment target—not medical advice or a test you can fail.").foregroundStyle(.secondary)
+        QuestionScreen(color: .sniffMint, symbol: "sparkles", title: "\(petName)’s starting plan", subtitle: "Built from age, size, breed tendencies, and current play. You can personalize more after entering Pawprint.") {
             VStack(spacing: 14) {
                 Text("RECOMMENDED").font(.caption.bold()).tracking(1).foregroundStyle(Color.sniffPurple)
                 Text("\(recommendedDailyMinutes) minutes a day").font(.system(.largeTitle, design: .default, weight: .bold)).foregroundStyle(Color.sniffPurple)
@@ -452,7 +456,7 @@ struct OnboardingView: View {
                     Slider(value: Binding(get: { Double(dailyPlayGoalMinutes) }, set: { dailyPlayGoalMinutes = Int($0.rounded()) }), in: 5...60, step: 5).tint(.sniffPurple)
                 }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
             }
-            Label("You can change the plan anytime as you learn more.", systemImage: "heart.fill").font(.subheadline.bold()).foregroundStyle(Color.sniffBlue)
+            Label("Every minute counts. You can adjust this anytime.", systemImage: "heart.fill").font(.subheadline.bold()).foregroundStyle(Color.sniffBlue)
         }
     }
     private func hourPicker(_ title: String, selection: Binding<Int>) -> some View {
@@ -495,8 +499,9 @@ struct OnboardingView: View {
             pet.hasSnacks = hasSnacks; pet.snacksPerDay = hasSnacks ? snacksPerDay : 0; pet.snackKinds = hasSnacks ? snackKinds.trimmingCharacters(in: .whitespacesAndNewlines) : ""
             pet.hoursAloneDaily = hoursAloneDaily; pet.livingStyleRaw = livingStyleRaw
             pet.dailyPlayGoalMinutes = useRecommendedGoal ? recommendedDailyMinutes : dailyPlayGoalMinutes
-            pet.activityGoalRaw = (activityGoals.first ?? .maintain).rawValue; pet.activityGoalRaws = activityGoals.map(\.rawValue).sorted(); pet.usesRecommendedPlayGoal = useRecommendedGoal
+            pet.activityGoalRaw = ActivityGoal.maintain.rawValue; pet.activityGoalRaws = [ActivityGoal.maintain.rawValue]; pet.usesRecommendedPlayGoal = useRecommendedGoal
             pet.breedGuess = breedDraft
+            pet.profilePersonalizationComplete = false
             do {
                 try modelContext.save()
                 clearDraft()
@@ -546,13 +551,14 @@ struct OnboardingView: View {
         if activityGoals.contains(.gentlyBuild) { minutes = max(minutes, min(playFrequency.estimatedMinutes + 5, 60)) }
         if activityGoals.contains(.settleMore) { minutes = max(15, minutes - 5) }
         if let breedProfile { minutes += breedProfile.energy - 3 }
+        if playFrequency == .none || playFrequency == .occasionally { minutes = min(minutes, playFrequency.estimatedMinutes + 10) }
         if limitations.contains(.mobilityLimited) { minutes -= 5 }
         return min(60, max(10, Int((Double(minutes) / 5).rounded()) * 5))
     }
     private var planExplanation: String {
         if activityGoals.contains(.gentlyBuild) { return "A small step above current habits so activity can grow without dragging or waking them to perform." }
         if activityGoals.contains(.settleMore) { return "A balanced target with active moments and calming connection, rather than nonstop high-energy play." }
-        return "A steady target based on life stage, breed tendencies, and present-day rhythm. Short sessions can add up."
+        return "A gentle first target. Pawprint will adjust as it learns what actually works."
     }
     private func restoreDraftCollections() {
         limitations = Set(limitationsDraft.split(separator: ",").compactMap { Limitation(rawValue: String($0)) })
@@ -899,6 +905,9 @@ struct PetProfileEditorView: View {
     @State private var weightPounds: Double
     @State private var energyRaw: String
     @State private var activityGoalRaw: String
+    @State private var socialStyleRaw: String
+    @State private var foodMotivationRaw: String
+    @State private var noiseSensitive: Bool
     @State private var temperament: String
     @State private var sensitivities: String
     @State private var health: String
@@ -912,6 +921,9 @@ struct PetProfileEditorView: View {
         _weightPounds = State(initialValue: pet.weightPounds ?? (pet.species == .cat ? 10 : 30))
         _energyRaw = State(initialValue: pet.energyRaw)
         _activityGoalRaw = State(initialValue: pet.activityGoalRaw)
+        _socialStyleRaw = State(initialValue: pet.socialStyleRaw)
+        _foodMotivationRaw = State(initialValue: pet.foodMotivationRaw)
+        _noiseSensitive = State(initialValue: pet.noiseSensitive)
         _temperament = State(initialValue: pet.temperamentNote)
         _sensitivities = State(initialValue: pet.sensitivityNote)
         _health = State(initialValue: pet.healthContextNote)
@@ -935,6 +947,11 @@ struct PetProfileEditorView: View {
                 }
                 Section("What should the plan support?") {
                     Picker("Goal", selection: $activityGoalRaw) { ForEach(ActivityGoal.allCases) { Text($0.label).tag($0.rawValue) } }
+                }
+                Section("Personality & motivation") {
+                    Picker("Clinginess", selection: $socialStyleRaw) { ForEach(SocialStyle.allCases) { Text($0.label).tag($0.rawValue) } }
+                    Picker("Food motivation", selection: $foodMotivationRaw) { ForEach(FoodMotivation.allCases) { Text($0.label).tag($0.rawValue) } }
+                    Toggle("Sensitive to sudden sounds", isOn: $noiseSensitive)
                 }
                 Section("Daily play goal") {
                     Stepper("\(dailyGoalMinutes) minutes per day", value: $dailyGoalMinutes, in: 5...60, step: 5)
@@ -961,9 +978,12 @@ struct PetProfileEditorView: View {
         pet.ageYears = ageYears; pet.weightPounds = weightPounds
         pet.ageRaw = ageYears < 1.5 ? AgeBand.young.rawValue : ageYears >= (pet.species == .cat ? 11 : 8) ? AgeBand.senior.rawValue : AgeBand.adult.rawValue
         pet.sizeRaw = pet.species == .cat ? (weightPounds < 8 ? SizeBand.small.rawValue : weightPounds < 15 ? SizeBand.medium.rawValue : SizeBand.large.rawValue) : (weightPounds < 20 ? SizeBand.small.rawValue : weightPounds < 60 ? SizeBand.medium.rawValue : SizeBand.large.rawValue)
-        pet.energyRaw = energyRaw; pet.activityGoalRaw = activityGoalRaw; pet.temperamentNote = temperament; pet.sensitivityNote = sensitivities
+        pet.energyRaw = energyRaw; pet.activityGoalRaw = activityGoalRaw; pet.activityGoalRaws = [activityGoalRaw]
+        pet.socialStyleRaw = socialStyleRaw; pet.foodMotivationRaw = foodMotivationRaw; pet.noiseSensitive = noiseSensitive
+        pet.temperamentNote = temperament; pet.sensitivityNote = sensitivities
         pet.healthContextNote = health; pet.currentSituationNote = situation; pet.profileUpdatedAt = .now
         pet.dailyPlayGoalMinutes = dailyGoalMinutes
+        pet.profilePersonalizationComplete = true
         try? modelContext.save(); dismiss()
     }
 }
@@ -1160,17 +1180,19 @@ struct TodayView: View {
         let staleDate = Calendar.current.date(byAdding: .day, value: -30, to: .now) ?? .now
         let recentSignals = petSessions.prefix(3)
         let changedBehavior = recentSignals.filter { $0.reaction == .notInterested || $0.reaction == .tooHard || $0.earlyStopReason == .uncomfortable }.count >= 2
-        return pet.profileUpdatedAt < staleDate || changedBehavior
+        return !pet.profilePersonalizationComplete || pet.profileUpdatedAt < staleDate || changedBehavior
     }
     private var profileCheckIn: some View {
         Button { editingProfile = true } label: {
             HStack(spacing: 12) {
                 Image(systemName: "slider.horizontal.3").foregroundStyle(Color.sniffPurple)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Has anything changed?").font(.subheadline.bold())
-                    Text("A quick profile check can improve today’s ideas.").font(.caption).foregroundStyle(Color.sniffMuted)
+                    Text(pet.profilePersonalizationComplete ? "Has anything changed?" : "Finish personalizing \(pet.name)").font(.subheadline.bold())
+                    Text(pet.profilePersonalizationComplete ? "A quick profile check can improve today’s ideas." : "Add personality, routines, sensitivities, and goals anytime.").font(.caption).foregroundStyle(Color.sniffMuted)
                 }
-                Spacer(); Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
+                Spacer()
+                if !pet.profilePersonalizationComplete { Text("+1 badge").font(.caption.bold()).foregroundStyle(Color.sniffPurple) }
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
             }.padding(14).background(Color.sniffLavender.opacity(0.65), in: RoundedRectangle(cornerRadius: 20))
         }.buttonStyle(.plain)
             .accessibilityIdentifier("today.profileCheckIn")

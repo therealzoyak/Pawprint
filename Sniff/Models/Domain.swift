@@ -482,6 +482,7 @@ private extension String {
     var activityGoalRaw: String = ActivityGoal.maintain.rawValue
     var activityGoalRaws: [String] = [ActivityGoal.maintain.rawValue]
     var usesRecommendedPlayGoal: Bool = true
+    var profilePersonalizationComplete: Bool = false
 
     init(name: String, species: Species, age: AgeBand, size: SizeBand, energy: EnergyLevel, exactAgeYears: Double? = nil, weightPounds: Double? = nil, breedGuess: String? = nil, limitations: Set<Limitation>, materials: Set<Material>, accountID: UUID? = nil, ownerUID: String? = nil) {
         self.name = name; speciesRaw = species.rawValue; ageRaw = age.rawValue; sizeRaw = size.rawValue; energyRaw = energy.rawValue
