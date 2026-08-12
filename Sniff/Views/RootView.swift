@@ -1512,7 +1512,7 @@ struct PlayTimeSheet: View {
             ForEach(suggestions) { suggestion in
                 NavigationLink { ActivityDetailView(activity: suggestion, pet: pet, onComplete: { dismiss() }) } label: {
                     HStack(spacing: 12) {
-                        Image(suggestion.artworkName).resizable().scaledToFill().frame(width: 68, height: 68).clipped().clipShape(RoundedRectangle(cornerRadius: 16))
+                        ActivityArtwork(activity: suggestion, pet: pet).frame(width: 68, height: 68).clipShape(RoundedRectangle(cornerRadius: 16))
                         VStack(alignment: .leading, spacing: 4) {
                             Text(suggestion.displayTitle).font(.headline).foregroundStyle(Color.sniffInk).lineLimit(2)
                             Text("\(suggestion.durationMinutes) min · \(suggestion.category.funLabel)").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
@@ -1615,11 +1615,74 @@ struct VibePicker: View {
     }
 }
 
+/// A deterministic, pet-only activity illustration. It replaces the old
+/// generated scenes and changes composition for every guided setup step.
+struct ActivityArtwork: View {
+    let activity: Activity
+    var pet: PetProfile? = nil
+    var step: Int = 0
+
+    private var species: Species { pet?.species ?? activity.species }
+    private var petSymbol: String { species == .dog ? "dog.fill" : "cat.fill" }
+    private var propSymbols: [String] {
+        let materials = activity.materials.map(\.icon)
+        let categorySymbols: [String] = switch activity.category {
+        case .foraging: ["nose.fill", "sparkles", "magnifyingglass"]
+        case .sensory: ["wind", "eye.fill", "leaf.fill"]
+        case .cognitive: ["puzzlepiece.fill", "questionmark", "lightbulb.fill"]
+        case .physical: ["ball.fill", "hare.fill", "figure.run"]
+        case .social: ["heart.fill", "pawprint.fill", "bubble.left.fill"]
+        case .calming: ["moon.stars.fill", "zzz", "heart.fill"]
+        }
+        return materials + categorySymbols
+    }
+    private var normalizedStep: Int { max(0, step) }
+    private var propSymbol: String { propSymbols[normalizedStep % max(propSymbols.count, 1)] }
+
+    var body: some View {
+        GeometryReader { proxy in
+            let side = min(proxy.size.width, proxy.size.height)
+            ZStack {
+                LinearGradient(
+                    colors: [activity.category.softColor, activity.category.accent.opacity(0.34)],
+                    startPoint: normalizedStep.isMultiple(of: 2) ? .topLeading : .topTrailing,
+                    endPoint: .bottomTrailing
+                )
+                Circle().fill(.white.opacity(0.45)).frame(width: side * 0.58).offset(x: side * 0.27, y: -side * 0.3)
+                Circle().fill(activity.category.accent.opacity(0.13)).frame(width: side * 0.48).offset(x: -side * 0.34, y: side * 0.34)
+
+                Image(systemName: propSymbol)
+                    .font(.system(size: side * 0.28, weight: .bold))
+                    .foregroundStyle(activity.category.accent)
+                    .rotationEffect(.degrees(normalizedStep.isMultiple(of: 2) ? -8 : 8))
+                    .offset(x: normalizedStep.isMultiple(of: 2) ? side * 0.2 : -side * 0.2, y: -side * 0.19)
+
+                Image(systemName: petSymbol)
+                    .font(.system(size: side * 0.45, weight: .semibold))
+                    .foregroundStyle(Color.sniffInk)
+                    .offset(x: normalizedStep.isMultiple(of: 2) ? -side * 0.13 : side * 0.13, y: side * 0.19)
+
+                if step >= 0 {
+                    Text("\(step + 1)")
+                        .font(.system(size: side * 0.11, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.white)
+                        .frame(width: side * 0.22, height: side * 0.22)
+                        .background(activity.category.accent, in: Circle())
+                        .offset(x: -side * 0.34, y: -side * 0.34)
+                }
+            }
+            .clipped()
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Pet-only illustration for \(activity.displayTitle), step \(max(1, step + 1))")
+        }
+    }
+}
+
 struct ActivityCard: View {
     let activity: Activity
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
-            Image(artName).resizable().scaledToFill().frame(maxWidth: .infinity).frame(height: 178).clipped()
+            ActivityArtwork(activity: activity).frame(maxWidth: .infinity).frame(height: 178).clipped()
                 .clipShape(RoundedRectangle(cornerRadius: 18))
                 .overlay(alignment: .bottom) {
                     LinearGradient(colors: [.clear, activity.category.accent.opacity(0.42)], startPoint: .center, endPoint: .bottom)
@@ -1640,7 +1703,6 @@ struct ActivityCard: View {
             Label("Tap to start", systemImage: "play.fill").font(.subheadline.bold()).foregroundStyle(activity.category.accent)
         }.padding().background(activity.category.softColor, in: RoundedRectangle(cornerRadius: 26)).overlay { RoundedRectangle(cornerRadius: 26).stroke(activity.category.accent.opacity(0.32), lineWidth: 1.5) }.shadow(color: activity.category.accent.opacity(0.18), radius: 18, y: 9)
     }
-    private var artName: String { activity.artworkName }
     private var icon: String { switch activity.category { case .foraging: "nose"; case .sensory: "wind"; case .cognitive: "puzzlepiece.fill"; case .physical: "figure.run"; case .social: "heart.fill"; case .calming: "moon.stars.fill" } }
 }
 
@@ -2146,7 +2208,7 @@ struct ActivityDetailView: View {
         }
     }
     private var materialScreen: some View {
-        GuidedMoment(icon: "shippingbox.fill", artworkName: activity.artworkName, color: flowColor, eyebrow: hasPlayedBefore ? "WELCOME BACK" : "FIRST, GRAB THIS", title: activity.materials.isEmpty ? "Just you and \(pet.name)" : activity.materials.map(\.label).joined(separator: " + "), detail: hasPlayedBefore ? "You’ve done this one before, so you can jump right in." : "Bring everything nearby so play can stay uninterrupted.") {
+        GuidedMoment(icon: "shippingbox.fill", activity: activity, pet: pet, visualStep: -1, color: flowColor, eyebrow: hasPlayedBefore ? "WELCOME BACK" : "FIRST, GRAB THIS", title: activity.materials.isEmpty ? "Just you and \(pet.name)" : activity.materials.map(\.label).joined(separator: " + "), detail: hasPlayedBefore ? "You’ve done this one before, so you can jump right in." : "Bring everything nearby so play can stay uninterrupted.") {
             if hasPlayedBefore {
                 VStack(spacing: 10) {
                     Button("Start again") { withAnimation { phase = .playing } }.buttonStyle(PrimaryButtonStyle())
@@ -2158,14 +2220,14 @@ struct ActivityDetailView: View {
         }
     }
     private func stepScreen(_ index: Int) -> some View {
-        GuidedMoment(icon: stepIcon(index), artworkName: activity.artworkName, color: flowColor, eyebrow: "SETUP · \(index + 1) OF \(activity.steps.count)", title: activity.steps[index], detail: index == 0 ? "No rush. \(pet.name) can watch while you get ready." : "Perfect. Keep it simple and let curiosity do the work.") {
+        GuidedMoment(icon: stepIcon(index), activity: activity, pet: pet, visualStep: index, color: flowColor, eyebrow: "SETUP · \(index + 1) OF \(activity.steps.count)", title: activity.steps[index], detail: index == 0 ? "No rush. \(pet.name) can watch while you get ready." : "Perfect. Keep it simple and let curiosity do the work.") {
             Button(index == activity.steps.count - 1 ? "We’re ready" : "Got it—next") {
                 if index + 1 < activity.steps.count { withAnimation { phase = .step(index + 1) } } else { withAnimation { phase = .ready } }
             }.buttonStyle(PrimaryButtonStyle())
         }
     }
     private var readyScreen: some View {
-        GuidedMoment(icon: "play.fill", artworkName: activity.artworkName, color: .sniffPink, eyebrow: activity.needsSetup ? "SETUP TOOK \(formatted(setupSeconds))" : "NO SETUP NEEDED", title: activity.needsSetup ? "Ready when \(pet.name) is" : activity.steps.first ?? "Start when \(pet.name) is ready", detail: readyDetail) {
+        GuidedMoment(icon: "play.fill", activity: activity, pet: pet, visualStep: activity.steps.count, color: .sniffPink, eyebrow: activity.needsSetup ? "SETUP TOOK \(formatted(setupSeconds))" : "NO SETUP NEEDED", title: activity.needsSetup ? "Ready when \(pet.name) is" : activity.steps.first ?? "Start when \(pet.name) is ready", detail: readyDetail) {
             Button { withAnimation { phase = .playing } } label: { Label("Start playtime", systemImage: "play.fill") }.buttonStyle(PrimaryButtonStyle())
         }
     }
@@ -2204,7 +2266,7 @@ struct ActivityDetailView: View {
         }.padding()
     }
     private var finishedScreen: some View {
-        GuidedMoment(icon: "checkmark", artworkName: activity.artworkName, color: flowColor, eyebrow: "ACTIVITY COMPLETE · \(formatted(playSeconds))", title: "You showed up for \(pet.name)", detail: "That play time supported their enrichment and your bond.") {
+        GuidedMoment(icon: "checkmark", activity: activity, pet: pet, visualStep: activity.steps.count + 1, color: flowColor, eyebrow: "ACTIVITY COMPLETE · \(formatted(playSeconds))", title: "You showed up for \(pet.name)", detail: "That play time supported their enrichment and your bond.") {
             Button("Finish and save") { completing = true }.buttonStyle(PrimaryButtonStyle())
         }
     }
@@ -2216,18 +2278,13 @@ struct ActivityDetailView: View {
 }
 
 struct GuidedMoment<Actions: View>: View {
-    let icon: String; var artworkName: String? = nil; let color: Color; let eyebrow: String; let title: String; let detail: String; let actions: Actions
-    init(icon: String, artworkName: String? = nil, color: Color, eyebrow: String, title: String, detail: String, @ViewBuilder actions: () -> Actions) { self.icon = icon; self.artworkName = artworkName; self.color = color; self.eyebrow = eyebrow; self.title = title; self.detail = detail; self.actions = actions() }
+    let icon: String; let activity: Activity; let pet: PetProfile; let visualStep: Int; let color: Color; let eyebrow: String; let title: String; let detail: String; let actions: Actions
+    init(icon: String, activity: Activity, pet: PetProfile, visualStep: Int, color: Color, eyebrow: String, title: String, detail: String, @ViewBuilder actions: () -> Actions) { self.icon = icon; self.activity = activity; self.pet = pet; self.visualStep = visualStep; self.color = color; self.eyebrow = eyebrow; self.title = title; self.detail = detail; self.actions = actions() }
     var body: some View {
         VStack(spacing: 22) {
             Spacer()
             ZStack(alignment: .bottomTrailing) {
-                if let artworkName {
-                    Image(artworkName).resizable().scaledToFill()
-                } else {
-                    Color.white
-                    Image(systemName: icon).font(.system(size: 38, weight: .regular)).foregroundStyle(color)
-                }
+                ActivityArtwork(activity: activity, pet: pet, step: visualStep)
                 Image(systemName: icon).font(.system(size: 15, weight: .bold)).foregroundStyle(.white)
                     .frame(width: 34, height: 34).background(color, in: Circle()).overlay(Circle().stroke(.white, lineWidth: 2))
             }
@@ -2311,7 +2368,7 @@ struct CompletionView: View {
                             Text("Still feeling playful?").font(.headline)
                             Button { saveAndAdd(suggestion) } label: {
                                 HStack(spacing: 12) {
-                                    Image(suggestion.artworkName).resizable().scaledToFill().frame(width: 62, height: 62).clipShape(RoundedRectangle(cornerRadius: 16))
+                                    ActivityArtwork(activity: suggestion, pet: pet).frame(width: 62, height: 62).clipShape(RoundedRectangle(cornerRadius: 16))
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(suggestion.displayTitle).font(.headline).foregroundStyle(Color.sniffInk).lineLimit(2)
                                         Text("\(suggestion.durationMinutes) min · \(suggestion.category.funLabel)").font(.caption.bold()).foregroundStyle(Color.sniffAqua)
