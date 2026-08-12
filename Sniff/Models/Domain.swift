@@ -510,8 +510,9 @@ private extension String {
     var earlyStopReasonRaw: String?
     var combinedSessionID: UUID?
     var combinedActivityIDs: [String] = []
+    var setupBacktrackCount: Int = 0
 
-    init(activity: Activity, pet: PetProfile, reaction: Reaction, note: String = "", photoData: Data? = nil, actualDurationSeconds: Int? = nil, earlyStopReason: EarlyStopReason? = nil, combinedSessionID: UUID? = nil, combinedActivityIDs: [String] = []) {
+    init(activity: Activity, pet: PetProfile, reaction: Reaction, note: String = "", photoData: Data? = nil, actualDurationSeconds: Int? = nil, earlyStopReason: EarlyStopReason? = nil, combinedSessionID: UUID? = nil, combinedActivityIDs: [String] = [], setupBacktrackCount: Int = 0) {
         petID = pet.id; activityID = activity.id; activityTitle = activity.displayTitle; categoryRaw = activity.category.rawValue
         petName = pet.name; completedAt = .now; reactionRaw = reaction.rawValue; self.note = note; self.photoData = photoData
         presetDurationSeconds = activity.durationMinutes * 60
@@ -519,6 +520,7 @@ private extension String {
         earlyStopReasonRaw = earlyStopReason?.rawValue
         self.combinedSessionID = combinedSessionID
         self.combinedActivityIDs = combinedActivityIDs
+        self.setupBacktrackCount = setupBacktrackCount
     }
     var reaction: Reaction { Reaction(rawValue: reactionRaw) ?? .fine }
     var category: ActivityCategory { ActivityCategory(rawValue: categoryRaw) ?? .social }
@@ -636,9 +638,10 @@ struct RecommendationSignal {
     let presetDurationSeconds: Int
     let actualDurationSeconds: Int
     let earlyStopReason: EarlyStopReason?
-    init(activityID: String, category: ActivityCategory, reaction: Reaction, date: Date, presetDurationSeconds: Int = 0, actualDurationSeconds: Int = 0, earlyStopReason: EarlyStopReason? = nil) {
+    let setupBacktrackCount: Int
+    init(activityID: String, category: ActivityCategory, reaction: Reaction, date: Date, presetDurationSeconds: Int = 0, actualDurationSeconds: Int = 0, earlyStopReason: EarlyStopReason? = nil, setupBacktrackCount: Int = 0) {
         self.activityID = activityID; self.category = category; self.reaction = reaction; self.date = date
-        self.presetDurationSeconds = presetDurationSeconds; self.actualDurationSeconds = actualDurationSeconds; self.earlyStopReason = earlyStopReason
+        self.presetDurationSeconds = presetDurationSeconds; self.actualDurationSeconds = actualDurationSeconds; self.earlyStopReason = earlyStopReason; self.setupBacktrackCount = setupBacktrackCount
     }
 }
 

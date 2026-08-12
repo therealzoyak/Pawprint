@@ -2221,6 +2221,7 @@ struct ActivityDetailView: View {
     @State private var completing = false
     @State private var completionSaved = false
     @State private var mediaMessage: String?
+    @State private var setupBacktrackCount = 0
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(activity: Activity, pet: PetProfile, combinedSessionID: UUID? = nil, combinedActivityIDs: [String] = [], onComplete: @escaping () -> Void = {}) {
@@ -2260,18 +2261,39 @@ struct ActivityDetailView: View {
             else if phase != .finished { setupSeconds += 1 }
         }
         .fullScreenCover(isPresented: $completing, onDismiss: { if completionSaved { onComplete(); dismiss() } }) {
-            CompletionView(activity: activity, pet: pet, actualDurationSeconds: playSeconds, combinedSessionID: combinedSessionID, combinedActivityIDs: combinedActivityIDs) { completionSaved = true }
+            CompletionView(activity: activity, pet: pet, actualDurationSeconds: playSeconds, setupBacktrackCount: setupBacktrackCount, combinedSessionID: combinedSessionID, combinedActivityIDs: combinedActivityIDs) { completionSaved = true }
         }
         .alert("Camera preview", isPresented: Binding(get: { mediaMessage != nil }, set: { if !$0 { mediaMessage = nil } })) { Button("Got it") { mediaMessage = nil } } message: { Text(mediaMessage ?? "") }
     }
 
     private var progressHeader: some View {
-        HStack(spacing: 7) {
-            ForEach(0..<progressCount, id: \.self) { index in
-                Capsule().fill(index <= progressIndex ? flowColor : Color.sniffLine)
-                    .frame(height: 6).animation(.spring(response: 0.35), value: progressIndex)
+        HStack(spacing: 12) {
+            if canBacktrack {
+                Button(action: backtrack) {
+                    Image(systemName: "chevron.left").font(.caption.bold())
+                        .frame(width: 30, height: 30).background(.white, in: Circle())
+                }.buttonStyle(.plain).foregroundStyle(flowColor).accessibilityLabel("Previous activity step")
+            }
+            HStack(spacing: 7) {
+                ForEach(0..<progressCount, id: \.self) { index in
+                    Capsule().fill(index <= progressIndex ? flowColor : Color.sniffLine)
+                        .frame(height: 6).animation(.spring(response: 0.35), value: progressIndex)
+                }
             }
         }.padding(.horizontal, 24).padding(.top, 12)
+    }
+    private var canBacktrack: Bool {
+        switch phase { case .step, .ready: activity.needsSetup; default: false }
+    }
+    private func backtrack() {
+        setupBacktrackCount += 1
+        withAnimation {
+            switch phase {
+            case .step(let index): phase = index > 0 ? .step(index - 1) : .materials
+            case .ready: phase = activity.steps.isEmpty ? .materials : .step(activity.steps.count - 1)
+            default: break
+            }
+        }
     }
     private var progressCount: Int { activity.needsSetup ? activity.steps.count + 3 : 2 }
     private var progressIndex: Int {
@@ -2387,6 +2409,7 @@ struct CompletionView: View {
     @Environment(\.modelContext) private var modelContext
     let activity: Activity; let pet: PetProfile
     let actualDurationSeconds: Int
+    var setupBacktrackCount: Int = 0
     var combinedSessionID: UUID? = nil
     var combinedActivityIDs: [String] = []
     var onSaved: () -> Void = {}
@@ -2409,13 +2432,14 @@ struct CompletionView: View {
                             Image(systemName: "heart.fill").font(.system(size: 42, weight: .bold)).foregroundStyle(.white)
                         }.frame(width: 104, height: 104).shadow(color: Color.sniffPink.opacity(0.3), radius: 18, y: 9)
                         Text("\(formatted(actualDurationSeconds)) together!").font(.system(.largeTitle, design: .default, weight: .bold))
-                        Text("A lovely moment with \(pet.name).").font(.title3).foregroundStyle(.secondary)
+                        Text("One quick check-in helps Pawprint learn what feels right for \(pet.name).").font(.title3).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity).multilineTextAlignment(.center)
                     HStack {
                         Label("Preset \(activity.durationMinutes) min", systemImage: "flag.fill")
                         Spacer()
                         Label("Played \(formatted(actualDurationSeconds))", systemImage: "timer")
                     }.font(.caption.bold()).foregroundStyle(Color.sniffMuted).padding(12).background(.white, in: RoundedRectangle(cornerRadius: 15))
+                    Text("How did this feel for \(pet.name)?").font(.headline)
                     LazyVGrid(columns: [.init(.flexible()), .init(.flexible())]) {
                         ForEach(Reaction.allCases) { item in
                             Button { reaction = item } label: { Label(item.rawValue, systemImage: item.symbol).frame(maxWidth: .infinity, minHeight: 48) }
@@ -2433,16 +2457,15 @@ struct CompletionView: View {
                             }
                         }
                     }
-                    TextField("Anything funny happen? (optional)", text: $note, axis: .vertical)
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text("Anything Pawprint should learn? (optional)").font(.headline)
+                        Text("For example: too many steps, lost interest, wanted more cuddling, or loved the movement.").font(.caption).foregroundStyle(.secondary)
+                        TextField("A short note about what worked", text: $note, axis: .vertical)
                         .lineLimit(2...5).padding(15)
                         .background(Color.sniffSurface, in: RoundedRectangle(cornerRadius: 18))
                         .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.sniffLine) }
                         .focused($noteFocused)
-                    PhotosPicker(selection: $photoItem, matching: .images) {
-                        Label(photoData == nil ? "Add a photo memory" : "Photo added", systemImage: photoData == nil ? "photo.badge.plus" : "checkmark.circle.fill")
-                            .frame(maxWidth: .infinity)
-                    }.buttonStyle(.bordered).tint(.sniffPurple)
-                        .onChange(of: photoItem) { _, item in loadPhoto(item) }
+                    }
                     Button("Save and return home") { save() }.buttonStyle(PrimaryButtonStyle()).disabled(reaction == nil || (endedEarly && earlyStopReason == nil))
                     if let suggestion = compatibleAddOn {
                         VStack(alignment: .leading, spacing: 10) {
@@ -2491,7 +2514,7 @@ struct CompletionView: View {
     }
     private func persist(reaction: Reaction, groupID: UUID?, activityIDs: [String]) {
         guard !saved else { return }
-        modelContext.insert(EnrichmentSession(activity: activity, pet: pet, reaction: reaction, note: note, photoData: photoData, actualDurationSeconds: actualDurationSeconds, earlyStopReason: earlyStopReason, combinedSessionID: groupID, combinedActivityIDs: activityIDs))
+        modelContext.insert(EnrichmentSession(activity: activity, pet: pet, reaction: reaction, note: note, photoData: photoData, actualDurationSeconds: actualDurationSeconds, earlyStopReason: earlyStopReason, combinedSessionID: groupID, combinedActivityIDs: activityIDs, setupBacktrackCount: setupBacktrackCount))
         try? modelContext.save(); saved = true
     }
     private func loadPhoto(_ item: PhotosPickerItem?) {

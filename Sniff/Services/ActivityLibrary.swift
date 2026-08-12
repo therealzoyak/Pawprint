@@ -13,7 +13,7 @@ struct ActivityLibrary {
 
     static func history(for pet: PetProfile, sessions: [EnrichmentSession]) -> [RecommendationSignal] {
         sessions.filter { $0.petID == pet.id || ($0.petID == nil && $0.petName == pet.name) }.map {
-            RecommendationSignal(activityID: $0.activityID, category: $0.category, reaction: $0.reaction, date: $0.completedAt, presetDurationSeconds: $0.presetDurationSeconds, actualDurationSeconds: $0.actualDurationSeconds, earlyStopReason: $0.earlyStopReason)
+            RecommendationSignal(activityID: $0.activityID, category: $0.category, reaction: $0.reaction, date: $0.completedAt, presetDurationSeconds: $0.presetDurationSeconds, actualDurationSeconds: $0.actualDurationSeconds, earlyStopReason: $0.earlyStopReason, setupBacktrackCount: $0.setupBacktrackCount)
         }
     }
 
@@ -155,6 +155,9 @@ struct ActivityLibrary {
                 if activity.category == relevantShortStops.last?.category { value -= min(32, relevantShortStops.count * 10) }
             }
             value -= activity.tier * 2
+            let recentBacktracks = history.filter { $0.setupBacktrackCount > 0 }.suffix(5)
+            if recentBacktracks.contains(where: { $0.activityID == activity.id }) { value -= 24 }
+            if recentBacktracks.reduce(0, { $0 + $1.setupBacktrackCount }) >= 2 { value -= activity.tier * 8 }
             value += activity.id.unicodeScalars.reduce(dayNumber) { $0 + Int($1.value) } % 3
             return value
         }
