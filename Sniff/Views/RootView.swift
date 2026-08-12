@@ -193,7 +193,7 @@ struct OnboardingView: View {
     private var onboardingScrollContent: some View {
         VStack(alignment: .leading, spacing: 22) {
             onboardingHeader
-            AnyView(stepContent).id(step).transition(.scale(scale: 0.96).combined(with: .opacity))
+            AnyView(stepContent).id(step)
         }.padding(24)
     }
 
@@ -296,7 +296,9 @@ struct OnboardingView: View {
                 ForEach(BreedProfile.all.filter { $0.species == species }) { breed in Text(breed.name).tag(breed.name) }
             }.pickerStyle(.menu).font(.headline).padding().background(.white, in: RoundedRectangle(cornerRadius: 22))
             if let breedProfile { Label("Typical energy: \(breedProfile.energy) of 5 · only a starting estimate", systemImage: "sparkles").font(.caption).foregroundStyle(.secondary) }
+            Button { scanningBreed = true } label: { Label("Preview breed scan", systemImage: "viewfinder").frame(maxWidth: .infinity) }.buttonStyle(.bordered).tint(.sniffPurple)
         }
+        .sheet(isPresented: $scanningBreed) { BreedScanOnboardingPlaceholder(species: species) }
     }
     private var ageStep: some View {
         QuestionScreen(color: .sniffLavender, symbol: "birthday.cake.fill", title: "How old is \(petName)?", subtitle: "An estimate is completely fine.") {
@@ -384,18 +386,7 @@ struct OnboardingView: View {
             Text("These are starting clues, not permanent labels. Today’s mood and your available time can always override them.").foregroundStyle(.secondary)
             Text("When are they usually most open to an activity?").font(.headline)
             ChoiceGrid(values: DayPeriod.allCases, selected: $dayPeriods) { $0.label }
-            NotSureButton(selected: dayPeriods.isEmpty) { dayPeriods.removeAll() }
-            LabeledControl(title: "How motivating is food?") {
-                Picker("Food motivation", selection: $foodMotivationRaw) { ForEach(FoodMotivation.allCases) { Text($0.label).tag($0.rawValue) } }
-                    .pickerStyle(.segmented)
-                NotSureButton(selected: !foodMotivationKnown) { foodMotivationKnown.toggle() }
-            }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
-            LabeledControl(title: "How clingy or independent are they?") {
-                Picker("Social style", selection: $socialStyleRaw) { ForEach(SocialStyle.allCases) { Text($0.label).tag($0.rawValue) } }
-                    .pickerStyle(.segmented)
-                NotSureButton(selected: !socialStyleKnown) { socialStyleKnown.toggle() }
-            }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
-            Toggle("Sensitive to sudden sounds", isOn: $noiseSensitive).padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
+            NotSureButton(selected: false) { dayPeriods.removeAll() }
         }
     }
     private var routineStep: some View {
@@ -604,13 +595,13 @@ struct QuestionScreen<Content: View>: View {
     let color: Color; let symbol: String; let title: String; let subtitle: String; let content: Content
     init(color: Color, symbol: String, title: String, subtitle: String, @ViewBuilder content: () -> Content) { self.color = color; self.symbol = symbol; self.title = title; self.subtitle = subtitle; self.content = content() }
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Image(systemName: symbol).font(.title.bold()).foregroundStyle(Color.sniffInk).frame(width: 58, height: 58).background(color, in: Circle())
+        VStack(alignment: .leading, spacing: 14) {
+            Image(systemName: symbol).font(.title2.bold()).foregroundStyle(Color.sniffInk).frame(width: 48, height: 48).background(color, in: Circle())
                 .phaseAnimator([false, true]) { view, up in view.offset(y: up ? -3 : 2).scaleEffect(up ? 1.04 : 0.98) } animation: { _ in .easeInOut(duration: 1.2) }
-            Text(title).font(.system(size: 34, weight: .bold, design: .rounded)).lineLimit(3).minimumScaleFactor(0.75)
-            Text(subtitle).font(.title3).foregroundStyle(.secondary)
+            Text(title).font(.system(size: 29, weight: .bold, design: .rounded)).lineLimit(3).minimumScaleFactor(0.75)
+            Text(subtitle).font(.body).foregroundStyle(.secondary)
             content
-        }.padding(22).background(color.opacity(0.48), in: RoundedRectangle(cornerRadius: 32))
+        }.padding(18).background(color.opacity(0.38), in: RoundedRectangle(cornerRadius: 28))
     }
 }
 
@@ -1567,6 +1558,7 @@ struct PlayTimeSheet: View {
     @State private var intent: PlayIntent?
     @State private var dayPeriod = DayPeriod.current()
     @State private var selectedPetIDs: Set<UUID>
+    @State private var previewActivity: Activity?
     private let library = try? ActivityLibrary()
     init(pet: PetProfile, availablePets: [PetProfile], activities: [Activity]) {
         self.pet = pet; self.availablePets = availablePets; self.activities = activities
@@ -1595,7 +1587,8 @@ struct PlayTimeSheet: View {
             let gentleConnection = ranked.filter { $0.materials.isEmpty && ($0.category == .calming || $0.category == .social) }
             if !gentleConnection.isEmpty { return Array(gentleConnection.prefix(3)) }
         }
-        return Array(ranked.prefix(3))
+        let moodMatches = ranked.filter { intent.categories.contains($0.category) }
+        return Array((moodMatches.isEmpty ? ranked : moodMatches).prefix(3))
     }
     var body: some View {
         NavigationStack {
@@ -1618,6 +1611,7 @@ struct PlayTimeSheet: View {
                 }.padding(22)
                 }
             }.toolbar(.hidden, for: .navigationBar)
+                .sheet(item: $previewActivity) { activity in ActivityPreviewSheet(activity: activity, pet: pet) { previewActivity = nil } }
                 .animation(.spring(response: 0.4, dampingFraction: 0.74), value: intent)
                 .animation(.spring(response: 0.35, dampingFraction: 0.8), value: availableMinutes)
         }
@@ -1742,6 +1736,11 @@ struct PlayTimeSheet: View {
     private var recommendations: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Best fits").font(.title3.bold())
+            HStack(spacing: 8) {
+                ForEach(ActivityCategory.allCases) { category in
+                    HStack(spacing: 4) { Circle().fill(category.accent).frame(width: 8, height: 8); Text(category.funLabel) }
+                }
+            }.font(.system(size: 9, weight: .bold)).foregroundStyle(Color.sniffMuted).minimumScaleFactor(0.65)
             if let intent {
                 Label(intent.guidance(for: pet.species), systemImage: intent == .resting ? "moon.zzz.fill" : "heart.text.clipboard.fill")
                     .font(.subheadline.weight(.semibold))
@@ -1751,7 +1750,7 @@ struct PlayTimeSheet: View {
                     .background(Color.sniffButter.opacity(0.72), in: RoundedRectangle(cornerRadius: 18))
             }
             ForEach(suggestions) { suggestion in
-                NavigationLink { ActivityDetailView(activity: suggestion, pet: pet, onComplete: { dismiss() }) } label: {
+                Button { previewActivity = suggestion } label: {
                     HStack(spacing: 12) {
                         ActivityArtwork(activity: suggestion, pet: pet).frame(width: 68, height: 68).clipShape(RoundedRectangle(cornerRadius: 16))
                         VStack(alignment: .leading, spacing: 4) {
@@ -1762,11 +1761,11 @@ struct PlayTimeSheet: View {
                             }
                         }
                         Spacer()
-                        Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(Color.sniffAqua)
+                        Image(systemName: "info.circle.fill").font(.title2).foregroundStyle(Color.sniffAqua)
                     }.padding(11)
                         .background(LinearGradient(colors: [.white, suggestion.category.accent.opacity(0.09)], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 24))
                         .overlay { RoundedRectangle(cornerRadius: 24).stroke(suggestion.category.accent.opacity(0.16)) }
-                }.buttonStyle(.plain)
+                }.buttonStyle(.plain).accessibilityHint("Shows activity details before starting")
             }
         }
     }
@@ -1807,6 +1806,26 @@ struct PlayTimeSheet: View {
     private func activityFits(_ activity: Activity, pet: PetProfile) -> Bool {
         activity.species == pet.species && activity.ageBands.contains(pet.ageBand) && activity.sizeBands.contains(pet.sizeBand) &&
         activity.energyLevels.contains(pet.energy) && activity.exclusions.allSatisfy { !pet.limitations.contains($0) }
+    }
+}
+
+struct ActivityPreviewSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let activity: Activity; let pet: PetProfile; let onStart: () -> Void
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    ActivityArtwork(activity: activity, pet: pet).frame(height: 190).clipShape(RoundedRectangle(cornerRadius: 28))
+                    Text(activity.displayTitle).font(.largeTitle.bold())
+                    HStack { Label("\(activity.durationMinutes) min", systemImage: "clock.fill"); Text(activity.category.funLabel).badge(color: activity.category.accent) }.font(.subheadline.bold())
+                    Text(activity.description).font(.title3)
+                    InfoBlock(title: "What you’ll do", color: activity.category.softColor) { ForEach(Array(activity.steps.enumerated()), id: \.offset) { i, step in Text("\(i + 1). \(step)") } }
+                    if let safety = activity.safetyNotes.first { Label(safety, systemImage: "heart.text.clipboard.fill").font(.subheadline).foregroundStyle(.secondary) }
+                    NavigationLink { ActivityDetailView(activity: activity, pet: pet) } label: { Label("Start activity", systemImage: "play.fill").frame(maxWidth: .infinity) }.buttonStyle(PrimaryButtonStyle()).simultaneousGesture(TapGesture().onEnded(onStart))
+                }.padding(22)
+            }.background(Color.sniffPaper).toolbar { ToolbarItem(placement: .topBarTrailing) { Button { dismiss() } label: { Image(systemName: "xmark") } } }
+        }
     }
 }
 
@@ -2397,7 +2416,7 @@ struct ActivityDetailView: View {
             PetCareBackdrop()
             VStack(spacing: 0) {
                 progressHeader
-                ZStack { phaseContent.id(phase).transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity))) }
+                ZStack { phaseContent.id(phase).transition(.opacity) }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
@@ -2625,7 +2644,9 @@ struct CompletionView: View {
                         .overlay { RoundedRectangle(cornerRadius: 18).stroke(Color.sniffLine) }
                         .focused($noteFocused)
                     }
-                    Button("Save and return home") { save() }.buttonStyle(PrimaryButtonStyle()).disabled(reaction == nil || (endedEarly && earlyStopReason == nil))
+                    Button("Save and return home") { save() }.buttonStyle(PrimaryButtonStyle()).disabled(reaction == nil)
+                    Button("Exit without rating") { persist(reaction: .fine, groupID: combinedSessionID, activityIDs: combinedActivityIDs); onSaved(); dismiss() }
+                        .font(.subheadline.bold()).foregroundStyle(Color.sniffMuted).frame(maxWidth: .infinity)
                     if let suggestion = compatibleAddOn {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Still feeling playful?").font(.headline)
@@ -2639,7 +2660,7 @@ struct CompletionView: View {
                                     Spacer()
                                     Image(systemName: "arrow.right.circle.fill").font(.title2).foregroundStyle(Color.sniffAqua)
                                 }.padding(11).background(Color.sniffAqua.opacity(0.1), in: RoundedRectangle(cornerRadius: 22))
-                            }.buttonStyle(.plain).disabled(reaction == nil || (endedEarly && earlyStopReason == nil))
+                            }.buttonStyle(.plain).disabled(reaction == nil)
                         }
                     }
                 }.padding()
