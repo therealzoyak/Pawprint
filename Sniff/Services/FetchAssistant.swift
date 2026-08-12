@@ -181,10 +181,12 @@ struct FetchAssistant {
 
     private func joined(_ values: [String]) -> String {
         switch values.count {
-        case 0: "nothing extra"
-        case 1: values[0]
-        case 2: "\(values[0]) or \(values[1])"
-        default: "\(values.dropLast().joined(separator: ", ")), or \(values.last!)"
+        case 0: return "nothing extra"
+        case 1: return values[0]
+        case 2: return "\(values[0]) or \(values[1])"
+        default:
+            guard let last = values.last else { return "nothing extra" }
+            return "\(values.dropLast().joined(separator: ", ")), or \(last)"
         }
     }
 }

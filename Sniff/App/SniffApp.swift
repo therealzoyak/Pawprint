@@ -8,11 +8,16 @@ struct PawprintApp: App {
 
     init() {
         let schema = Schema([LocalAccount.self, PetProfile.self, EnrichmentSession.self, FavoriteActivity.self, ActivitySwap.self, EngagementEntry.self, HouseholdMember.self, CareTask.self, CareCompletion.self, PetNote.self])
+        let testing = ProcessInfo.processInfo.arguments.contains("--phase-one-testing")
         do {
-            container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)])
+            container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: testing)])
             recoveredFromStoreIssue = false
         } catch {
-            container = try! ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+            do {
+                container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+            } catch {
+                fatalError("Pawprint could not create a persistent or temporary data store: \(error.localizedDescription)")
+            }
             recoveredFromStoreIssue = true
         }
     }

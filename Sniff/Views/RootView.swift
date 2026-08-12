@@ -6,7 +6,7 @@ import PhotosUI
 struct RootView: View {
     @Query(sort: \PetProfile.createdAt) private var pets: [PetProfile]
     var showPersistenceWarning = false
-    @State private var showingLaunchSurface = true
+    @State private var showingLaunchSurface = !ProcessInfo.processInfo.arguments.contains("--phase-one-testing")
     @State private var showingOnboarding = false
     var body: some View {
         ZStack {
@@ -91,7 +91,9 @@ struct WelcomeView: View {
                     Label("Build a playful rhythm, at your pace", systemImage: "calendar")
                     Label("Bonding, not busywork", systemImage: "heart")
                 }.font(.headline).foregroundStyle(Color.sniffInk.opacity(0.88))
-                Button("Set up their profile", action: startOnboarding).buttonStyle(PrimaryButtonStyle())
+                Button("Set up their profile", action: startOnboarding)
+                    .buttonStyle(PrimaryButtonStyle())
+                    .accessibilityIdentifier("welcome.startOnboarding")
                 Spacer()
             }.padding(28)
         }
@@ -210,6 +212,7 @@ struct OnboardingView: View {
                         if isSaving { ProgressView().tint(.white) } else { Image(systemName: "arrow.right") }
                     }
                 }
+                .accessibilityIdentifier("onboarding.continue")
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(isSaving || (step == 1 && name.trimmingCharacters(in: .whitespaces).isEmpty))
             }
@@ -787,7 +790,9 @@ struct PawprintTabBar: View {
                         Text(item.label).font(.system(size: 10, weight: selection == item ? .bold : .semibold, design: .default))
                             .foregroundStyle(selection == item ? item.color : Color.sniffInk.opacity(0.55))
                     }.frame(maxWidth: .infinity)
-                }.buttonStyle(.plain).accessibilityAddTraits(selection == item ? .isSelected : [])
+                }.buttonStyle(.plain)
+                    .accessibilityIdentifier("tab.\(item.rawValue)")
+                    .accessibilityAddTraits(selection == item ? .isSelected : [])
             }
         }
         .padding(.horizontal, 10).padding(.top, 10).padding(.bottom, 7)
@@ -941,6 +946,7 @@ struct TodayView: View {
                 Spacer(); Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
             }.padding(14).background(Color.sniffLavender.opacity(0.65), in: RoundedRectangle(cornerRadius: 20))
         }.buttonStyle(.plain)
+            .accessibilityIdentifier("today.profileCheckIn")
     }
     private var playBlock: some View {
         Button { showingPlaySheet = true } label: {
@@ -956,6 +962,7 @@ struct TodayView: View {
                 Text(playTagline).font(.custom("AvenirNext-Medium", size: 15, relativeTo: .subheadline)).foregroundStyle(.white.opacity(0.9))
             }.frame(maxWidth: .infinity).foregroundStyle(.white).padding(20).contentShape(Rectangle())
         }.buttonStyle(.plain)
+            .accessibilityIdentifier("today.startPlay")
             .background(LinearGradient(colors: [.sniffAqua, Color(red: 0.02, green: 0.70, blue: 0.66)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
             .overlay { RoundedRectangle(cornerRadius: 28).stroke(.white.opacity(0.34), lineWidth: 1) }
             .shadow(color: Color.sniffAqua.opacity(0.25), radius: 16, y: 8)
@@ -1701,6 +1708,7 @@ struct FetchView: View {
                                     .padding(.leading, 16)
                                     .padding(.trailing, 58)
                                     .padding(.vertical, 15)
+                                    .accessibilityIdentifier("fetch.prompt")
                                 Button(action: ask) {
                                     Image(systemName: "pawprint.fill").font(.headline).frame(width: 38, height: 38)
                                         .background(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.sniffLavender : Color.sniffPurple, in: Circle())
@@ -1709,6 +1717,7 @@ struct FetchView: View {
                                 .buttonStyle(.plain)
                                 .padding(.trailing, 9)
                                 .disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                .accessibilityIdentifier("fetch.send")
                             }
                             .frame(minHeight: 58)
                             .background(.white, in: RoundedRectangle(cornerRadius: 24))
