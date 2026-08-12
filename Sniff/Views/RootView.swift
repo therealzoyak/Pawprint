@@ -592,17 +592,28 @@ struct MainTabView: View {
     @ToolbarContentBuilder private func petToolbar(_ current: PetProfile) -> some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
-                ForEach(accountPets) { pet in
-                    Button { selectedPetID = pet.id.uuidString } label: {
-                        Label(pet.name, systemImage: pet.id == current.id ? "checkmark.circle.fill" : (pet.species == .cat ? "cat.fill" : "dog.fill"))
+                Section("\(current.name)") {
+                    Button { editingProfile = true } label: {
+                        Label("Profile & plan", systemImage: "person.crop.circle")
+                    }
+                    Button { editingMaterials = true } label: {
+                        Label("Play stuff", systemImage: "shippingbox")
                     }
                 }
-                Divider()
-                Button { editingProfile = true } label: {
-                    Label("Edit \(current.name)’s profile", systemImage: "slider.horizontal.3")
+                let otherPets = accountPets.filter { $0.id != current.id }
+                if !otherPets.isEmpty {
+                    Section("Switch pet") {
+                        ForEach(otherPets) { pet in
+                            Button { selectedPetID = pet.id.uuidString } label: {
+                                Label(pet.name, systemImage: pet.species == .cat ? "cat.fill" : "dog.fill")
+                            }
+                        }
+                    }
                 }
-                Button { addingPet = true } label: {
-                    Label("Add pet", systemImage: "plus.circle.fill")
+                Section("Pet crew") {
+                    Button { addingPet = true } label: {
+                        Label("Add another pet", systemImage: "plus.circle")
+                    }
                 }
             } label: {
                 HStack(spacing: 7) {
@@ -611,7 +622,7 @@ struct MainTabView: View {
                     Image(systemName: "chevron.down").font(.caption2.bold())
                 }.padding(.leading, 4).padding(.trailing, 10).padding(.vertical, 4)
                     .background(.white.opacity(0.88), in: Capsule())
-            }.accessibilityLabel("Selected pet: \(current.name). Switch pets")
+            }.accessibilityLabel("\(current.name). Open pet profile and switching menu")
         }
     }
 }
