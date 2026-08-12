@@ -258,6 +258,16 @@ final class ActivityLibraryTests: XCTestCase {
         XCTAssertTrue(reply.text.contains("Towel"))
     }
 
+    func testMaterialFreeActivitySkipsSetup() {
+        XCTAssertFalse(activity("together", .social).needsSetup)
+        XCTAssertTrue(activity("towel-search", .sensory, materials: [.towel]).needsSetup)
+    }
+
+    func testRestingGuidanceProtectsSleep() {
+        XCTAssertTrue(PlayIntent.resting.guidance(for: .cat).localizedCaseInsensitiveContains("let them sleep"))
+        XCTAssertTrue(PlayIntent.resting.guidance(for: .dog).localizedCaseInsensitiveContains("sleeping dog rest"))
+    }
+
     private func makePet(name: String = "Milo", materials: Set<Material> = []) -> PetProfile {
         PetProfile(name: name, species: .dog, age: .adult, size: .medium, energy: .medium, limitations: [], materials: materials)
     }

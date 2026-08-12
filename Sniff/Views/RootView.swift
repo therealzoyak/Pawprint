@@ -1389,22 +1389,24 @@ struct PlayTimeSheet: View {
         }
     }
     private var timeDial: some View {
-        let fraction = Double(availableMinutes - 3) / 27
+        let minuteOptions = Array(stride(from: 5, through: 30, by: 5))
+        let selectedIndex = minuteOptions.firstIndex(of: availableMinutes) ?? 0
+        let fraction = Double(selectedIndex + 1) / Double(minuteOptions.count)
         return VStack(spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("How long can you play?").font(.custom("AvenirNext-DemiBold", size: 18, relativeTo: .headline))
-                    Text("Turn the dial").font(.caption).foregroundStyle(Color.sniffMuted)
+                    Text("Each mark adds 5 minutes").font(.caption).foregroundStyle(Color.sniffMuted)
                 }
                 Spacer()
             }
             ZStack {
-                ForEach(0..<28, id: \.self) { index in
+                ForEach(minuteOptions.indices, id: \.self) { index in
                     Capsule()
-                        .fill(index % 5 == 0 ? Color.sniffPurple : Color.sniffAqua.opacity(0.34))
-                        .frame(width: index % 5 == 0 ? 3 : 2, height: index % 5 == 0 ? 12 : 7)
+                        .fill(index <= selectedIndex ? Color.sniffPurple : Color.sniffAqua.opacity(0.34))
+                        .frame(width: 3, height: 13)
                         .offset(y: -97)
-                        .rotationEffect(.degrees(Double(index) / 28 * 360))
+                        .rotationEffect(.degrees(Double(index) / Double(minuteOptions.count) * 360))
                 }
                 Circle().stroke(Color.sniffAqua.opacity(0.12), lineWidth: 15).frame(width: 174, height: 174)
                 Circle().trim(from: 0, to: max(fraction, 0.015)).stroke(
@@ -1428,7 +1430,7 @@ struct PlayTimeSheet: View {
                     .overlay { Capsule().stroke(.white.opacity(0.9), lineWidth: 1.5) }
                     .shadow(color: Color.sniffAqua.opacity(0.3), radius: 4)
                     .offset(y: -97)
-                    .rotationEffect(.degrees(fraction * 360))
+                    .rotationEffect(.degrees(Double(selectedIndex) / Double(minuteOptions.count) * 360))
             }
             .frame(width: 208, height: 208)
             .contentShape(Circle())
@@ -1437,7 +1439,7 @@ struct PlayTimeSheet: View {
             .accessibilityLabel("Time available")
             .accessibilityValue("\(availableMinutes) minutes")
             .accessibilityAdjustableAction { direction in
-                availableMinutes = min(30, max(3, availableMinutes + (direction == .increment ? 1 : -1)))
+                availableMinutes = min(30, max(5, availableMinutes + (direction == .increment ? 5 : -5)))
             }
             if availableMinutes == 30 {
                 Label("Switch activities for fresh fun", systemImage: "arrow.triangle.2.circlepath")
@@ -1499,6 +1501,14 @@ struct PlayTimeSheet: View {
     private var recommendations: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Best fits").font(.title3.bold())
+            if let intent {
+                Label(intent.guidance(for: pet.species), systemImage: intent == .resting ? "moon.zzz.fill" : "heart.text.clipboard.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.sniffInk)
+                    .padding(13)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.sniffButter.opacity(0.72), in: RoundedRectangle(cornerRadius: 18))
+            }
             ForEach(suggestions) { suggestion in
                 NavigationLink { ActivityDetailView(activity: suggestion, pet: pet, onComplete: { dismiss() }) } label: {
                     HStack(spacing: 12) {
@@ -1506,6 +1516,9 @@ struct PlayTimeSheet: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(suggestion.displayTitle).font(.headline).foregroundStyle(Color.sniffInk).lineLimit(2)
                             Text("\(suggestion.durationMinutes) min · \(suggestion.category.funLabel)").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
+                            if let safetyNote = suggestion.safetyNotes.first {
+                                Text(safetyNote).font(.caption).foregroundStyle(Color.sniffInk.opacity(0.76)).lineLimit(2)
+                            }
                         }
                         Spacer()
                         Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(Color.sniffAqua)
@@ -1525,12 +1538,12 @@ struct PlayTimeSheet: View {
         let dy = value.location.y - center.y
         var radians = atan2(dx, -dy)
         if radians < 0 { radians += .pi * 2 }
-        let fraction = radians / (.pi * 2)
-        let proposed = min(30, max(3, 3 + Int((fraction * 27).rounded())))
-        if availableMinutes >= 27 && proposed <= 6 {
+        let segment = Int((radians / (.pi * 2) * 6).rounded()) % 6
+        let proposed = (segment + 1) * 5
+        if availableMinutes >= 25 && proposed == 5 {
             availableMinutes = 30
-        } else if availableMinutes <= 6 && proposed >= 27 {
-            availableMinutes = 3
+        } else if availableMinutes <= 10 && proposed == 30 {
+            availableMinutes = 5
         } else {
             availableMinutes = proposed
         }
@@ -2058,7 +2071,7 @@ struct ActivityDetailView: View {
     var onComplete: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \EnrichmentSession.completedAt, order: .reverse) private var allSessions: [EnrichmentSession]
-    @State private var phase: GuidedPhase = .materials
+    @State private var phase: GuidedPhase
     @State private var setupSeconds = 0
     @State private var playSeconds = 0
     @State private var isPaused = false
@@ -2066,6 +2079,15 @@ struct ActivityDetailView: View {
     @State private var completionSaved = false
     @State private var mediaMessage: String?
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    init(activity: Activity, pet: PetProfile, combinedSessionID: UUID? = nil, combinedActivityIDs: [String] = [], onComplete: @escaping () -> Void = {}) {
+        self.activity = activity
+        self.pet = pet
+        self.combinedSessionID = combinedSessionID
+        self.combinedActivityIDs = combinedActivityIDs
+        self.onComplete = onComplete
+        _phase = State(initialValue: activity.needsSetup ? .materials : .ready)
+    }
 
     var body: some View {
         ZStack {
@@ -2108,9 +2130,10 @@ struct ActivityDetailView: View {
             }
         }.padding(.horizontal, 24).padding(.top, 12)
     }
-    private var progressCount: Int { activity.steps.count + 3 }
+    private var progressCount: Int { activity.needsSetup ? activity.steps.count + 3 : 2 }
     private var progressIndex: Int {
-        switch phase { case .materials: 0; case .step(let index): index + 1; case .ready: activity.steps.count + 1; case .playing, .finished: activity.steps.count + 2 }
+        if !activity.needsSetup { return phase == .ready ? 0 : 1 }
+        return switch phase { case .materials: 0; case .step(let index): index + 1; case .ready: activity.steps.count + 1; case .playing, .finished: activity.steps.count + 2 }
     }
 
     @ViewBuilder private var phaseContent: some View {
@@ -2142,9 +2165,13 @@ struct ActivityDetailView: View {
         }
     }
     private var readyScreen: some View {
-        GuidedMoment(icon: "play.fill", artworkName: activity.artworkName, color: .sniffPink, eyebrow: "SETUP TOOK \(formatted(setupSeconds))", title: "Ready when \(pet.name) is", detail: "The play timer starts only when you tap below. Stop anytime they lose interest.") {
+        GuidedMoment(icon: "play.fill", artworkName: activity.artworkName, color: .sniffPink, eyebrow: activity.needsSetup ? "SETUP TOOK \(formatted(setupSeconds))" : "NO SETUP NEEDED", title: activity.needsSetup ? "Ready when \(pet.name) is" : activity.steps.first ?? "Start when \(pet.name) is ready", detail: readyDetail) {
             Button { withAnimation { phase = .playing } } label: { Label("Start playtime", systemImage: "play.fill") }.buttonStyle(PrimaryButtonStyle())
         }
+    }
+    private var readyDetail: String {
+        let safety = activity.safetyNotes.first ?? "Stop anytime they lose interest or move away."
+        return activity.needsSetup ? "The timer starts when you tap below. \(safety)" : "Nothing to gather. \(safety)"
     }
     private var timerScreen: some View {
         VStack(spacing: 22) {

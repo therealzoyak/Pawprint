@@ -275,6 +275,16 @@ enum PlayIntent: String, CaseIterable, Identifiable {
         case (.dog, .quietlyInterested): "Invite, don’t push"
         }
     }
+
+    func guidance(for species: Species) -> String {
+        switch (species, self) {
+        case (.cat, .resting): "If your cat is asleep, let them sleep. Try this only after they wake and choose to engage."
+        case (.dog, .resting): "Let a sleeping dog rest. When they wake, invite them gently and stop if they prefer downtime."
+        case (_, .hungry): "Keep portions small, count food toward their daily meals, and stop if they become tense around food."
+        case (.cat, _): "Invite—never chase or pick them up for play. Pause if their ears flatten, tail lashes, or they move away."
+        case (.dog, _): "Start only if they choose to join. Pause for stiffness, repeated avoidance, or signs they need a break."
+        }
+    }
 }
 
 struct Activity: Codable, Identifiable, Hashable {
@@ -293,6 +303,9 @@ struct Activity: Codable, Identifiable, Hashable {
     let sizeBands: [SizeBand]
     let energyLevels: [EnergyLevel]
     let exclusions: [Limitation]
+
+    /// Material-free activities do not need a separate preparation flow.
+    var needsSetup: Bool { !materials.isEmpty }
 
     /// Prefer artwork that depicts the actual game. The scene library uses the
     /// activity's props and setting before falling back to a category-fit scene.
