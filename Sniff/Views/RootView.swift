@@ -488,7 +488,7 @@ struct OnboardingView: View {
         materialsDraft = materials.map(\.rawValue).sorted().joined(separator: ",")
         dayPeriodsDraft = dayPeriods.map(\.rawValue).sorted().joined(separator: ",")
         activityGoalsDraft = activityGoals.map(\.rawValue).sorted().joined(separator: ",")
-        if step < totalSteps - 1 { withAnimation { step += 1 } }
+        if step < totalSteps - 1 { step += 1 }
         else {
             isSaving = true
             let pet = PetProfile(name: name.trimmingCharacters(in: .whitespaces), species: species, age: ageBand, size: sizeBand, energy: energyLevel, exactAgeYears: ageYears, weightPounds: weightPounds, limitations: limitations, materials: materials, accountID: accountID, ownerUID: ownerUID)
@@ -514,14 +514,14 @@ struct OnboardingView: View {
         }
     }
     private func goBack() {
-        if step > 0 { withAnimation { step -= 1 } }
+        if step > 0 { step -= 1 }
         else if let onCancel { onCancel() }
         else { dismiss() }
     }
     private func selectSpecies(_ selection: Species) {
         speciesRaw = selection.rawValue
         weightPounds = selection == .cat ? 10 : 30
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) { step = 1 }
+        step = 1
     }
     private var ageLabel: String { ageYears < 2 ? "\(Int((ageYears * 12).rounded())) months old" : String(format: "%.1f years old", ageYears) }
     private var ageBand: AgeBand { ageYears < 1.5 ? .young : ageYears >= (species == .cat ? 11 : 8) ? .senior : .adult }
@@ -2904,7 +2904,6 @@ struct LabeledControl<Content: View>: View {
     }
 }
 struct MiniPetChoice: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let species: Species; let action: () -> Void
     private var label: String { species == .dog ? "Dog" : "Cat" }
     private var icon: String { species == .dog ? "dog.fill" : "cat.fill" }
@@ -2917,8 +2916,14 @@ struct MiniPetChoice: View {
                     .shadow(color: Color.sniffBlue.opacity(0.13), radius: 12, y: 6)
                 Text(label).font(.headline).foregroundStyle(Color.sniffInk)
             }
-            .phaseAnimator(reduceMotion ? [false] : [false, true]) { content, floating in content.offset(y: floating ? -3 : 3).rotationEffect(.degrees(floating ? 1.2 : -1.2)) } animation: { _ in .easeInOut(duration: 1.6) }
-        }.buttonStyle(.plain).accessibilityLabel(label)
+        }.buttonStyle(CenteredBounceButtonStyle()).accessibilityLabel(label)
+    }
+}
+struct CenteredBounceButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(.spring(response: 0.22, dampingFraction: 0.62), value: configuration.isPressed)
     }
 }
 struct SelectedPetLogo: View {
