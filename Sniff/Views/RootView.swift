@@ -8,6 +8,7 @@ struct RootView: View {
     var showPersistenceWarning = false
     @State private var showingLaunchSurface = !ProcessInfo.processInfo.arguments.contains("--phase-one-testing")
     @State private var showingOnboarding = false
+    @State private var resetTestingDraft = false
     var body: some View {
         ZStack {
             Color.sniffPaper.ignoresSafeArea()
@@ -32,6 +33,12 @@ struct RootView: View {
                 }
             }
             .task {
+                if ProcessInfo.processInfo.arguments.contains("--phase-one-testing") && !resetTestingDraft {
+                    UserDefaults.standard.dictionaryRepresentation().keys
+                        .filter { $0.hasPrefix("petDraft.") || $0 == "selectedPetID" }
+                        .forEach(UserDefaults.standard.removeObject(forKey:))
+                    resetTestingDraft = true
+                }
                 try? await Task.sleep(for: .milliseconds(720))
                 withAnimation(.easeOut(duration: 0.28)) { showingLaunchSurface = false }
             }
@@ -556,6 +563,7 @@ struct MainTabView: View {
     @State private var addingPet = false
     @State private var editingMaterials = false
     @State private var scanningBreed = false
+    @State private var editingProfile = false
     @State private var section: PawprintSection = .play
     private var accountPets: [PetProfile] {
         guard let ownerUID else { return pets }
@@ -579,6 +587,7 @@ struct MainTabView: View {
             .fullScreenCover(isPresented: $addingPet) { OnboardingView(ownerUID: ownerUID) }
             .sheet(isPresented: $editingMaterials) { if let pet { MaterialEditorView(pet: pet) } }
             .sheet(isPresented: $scanningBreed) { if let pet { BreedScanPlaceholder(pet: pet) } }
+            .sheet(isPresented: $editingProfile) { if let pet { PetProfileEditorView(pet: pet) } }
     }
     @ToolbarContentBuilder private func petToolbar(_ current: PetProfile) -> some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
@@ -589,6 +598,9 @@ struct MainTabView: View {
                     }
                 }
                 Divider()
+                Button { editingProfile = true } label: {
+                    Label("Edit \(current.name)’s profile", systemImage: "slider.horizontal.3")
+                }
                 Button { addingPet = true } label: {
                     Label("Add pet", systemImage: "plus.circle.fill")
                 }
@@ -765,7 +777,11 @@ struct PetProfileEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     let pet: PetProfile
+    @State private var petName: String
+    @State private var ageYears: Double
+    @State private var weightPounds: Double
     @State private var energyRaw: String
+    @State private var activityGoalRaw: String
     @State private var temperament: String
     @State private var sensitivities: String
     @State private var health: String
@@ -774,7 +790,11 @@ struct PetProfileEditorView: View {
 
     init(pet: PetProfile) {
         self.pet = pet
+        _petName = State(initialValue: pet.name)
+        _ageYears = State(initialValue: pet.ageYears ?? 3)
+        _weightPounds = State(initialValue: pet.weightPounds ?? (pet.species == .cat ? 10 : 30))
         _energyRaw = State(initialValue: pet.energyRaw)
+        _activityGoalRaw = State(initialValue: pet.activityGoalRaw)
         _temperament = State(initialValue: pet.temperamentNote)
         _sensitivities = State(initialValue: pet.sensitivityNote)
         _health = State(initialValue: pet.healthContextNote)
@@ -785,9 +805,19 @@ struct PetProfileEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("The basics") {
+                    TextField("Name", text: $petName)
+                    LabeledContent("Age", value: ageYears < 2 ? "\(Int((ageYears * 12).rounded())) months" : String(format: "%.1f years", ageYears))
+                    Slider(value: $ageYears, in: 0.25...22, step: 0.25)
+                    LabeledContent("Weight", value: "\(Int(weightPounds.rounded())) lb")
+                    Slider(value: $weightPounds, in: 2...(pet.species == .cat ? 30 : 180), step: 1)
+                }
                 Section("Current energy") {
                     Picker("Energy", selection: $energyRaw) { ForEach(EnergyLevel.allCases) { Text($0.rawValue.capitalized).tag($0.rawValue) } }
                         .pickerStyle(.segmented)
+                }
+                Section("What should the plan support?") {
+                    Picker("Goal", selection: $activityGoalRaw) { ForEach(ActivityGoal.allCases) { Text($0.label).tag($0.rawValue) } }
                 }
                 Section("Daily play goal") {
                     Stepper("\(dailyGoalMinutes) minutes per day", value: $dailyGoalMinutes, in: 5...60, step: 5)
@@ -809,7 +839,12 @@ struct PetProfileEditorView: View {
         }
     }
     private func save() {
-        pet.energyRaw = energyRaw; pet.temperamentNote = temperament; pet.sensitivityNote = sensitivities
+        let cleanedName = petName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleanedName.isEmpty { pet.name = cleanedName }
+        pet.ageYears = ageYears; pet.weightPounds = weightPounds
+        pet.ageRaw = ageYears < 1.5 ? AgeBand.young.rawValue : ageYears >= (pet.species == .cat ? 11 : 8) ? AgeBand.senior.rawValue : AgeBand.adult.rawValue
+        pet.sizeRaw = pet.species == .cat ? (weightPounds < 8 ? SizeBand.small.rawValue : weightPounds < 15 ? SizeBand.medium.rawValue : SizeBand.large.rawValue) : (weightPounds < 20 ? SizeBand.small.rawValue : weightPounds < 60 ? SizeBand.medium.rawValue : SizeBand.large.rawValue)
+        pet.energyRaw = energyRaw; pet.activityGoalRaw = activityGoalRaw; pet.temperamentNote = temperament; pet.sensitivityNote = sensitivities
         pet.healthContextNote = health; pet.currentSituationNote = situation; pet.profileUpdatedAt = .now
         pet.dailyPlayGoalMinutes = dailyGoalMinutes
         try? modelContext.save(); dismiss()
