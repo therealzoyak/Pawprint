@@ -1193,7 +1193,7 @@ struct TodayView: View {
                 Spacer()
                 if !pet.profilePersonalizationComplete { Text("+1 badge").font(.caption.bold()).foregroundStyle(Color.sniffPurple) }
                 Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
-            }.padding(14).background(Color.sniffLavender.opacity(0.65), in: RoundedRectangle(cornerRadius: 20))
+            }.padding(14).background(pet.profilePersonalizationComplete ? Color.sniffLavender.opacity(0.65) : Color.sniffButter.opacity(0.82), in: RoundedRectangle(cornerRadius: 20))
         }.buttonStyle(.plain)
             .accessibilityIdentifier("today.profileCheckIn")
     }
