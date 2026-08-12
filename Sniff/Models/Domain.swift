@@ -26,10 +26,26 @@ enum SocialStyle: String, Codable, CaseIterable, Identifiable {
     }
 }
 enum ActivityGoal: String, Codable, CaseIterable, Identifiable {
-    case maintain, gentlyBuild, settleMore
+    case maintain, gentlyBuild, settleMore, bondMore, confidence, variety
     var id: Self { self }
-    var label: String { switch self { case .maintain: "Keep their rhythm"; case .gentlyBuild: "Build more activity"; case .settleMore: "Balance busy energy" } }
-    var detail: String { switch self { case .maintain: "Support what is already working"; case .gentlyBuild: "Add movement gradually, without forcing it"; case .settleMore: "Mix active play with easier wind-downs" } }
+    var label: String { switch self { case .maintain: "A little of everything"; case .gentlyBuild: "Build more activity"; case .settleMore: "Balance busy energy"; case .bondMore: "Feel closer together"; case .confidence: "Build confidence"; case .variety: "Try more variety" } }
+    var detail: String { switch self { case .maintain: "A balanced starting mix"; case .gentlyBuild: "Add movement gradually"; case .settleMore: "Practice easier wind-downs"; case .bondMore: "More shared, affectionate moments"; case .confidence: "Gentle wins without pressure"; case .variety: "Discover new favorites" } }
+}
+enum PlayFrequency: String, CaseIterable, Identifiable {
+    case none, occasionally, weekly, mostDays, dailySeveral
+    var id: Self { self }
+    var label: String { switch self { case .none: "Almost none"; case .occasionally: "Every now & then"; case .weekly: "A few times a week"; case .mostDays: "Most days"; case .dailySeveral: "Several times daily" } }
+    var detail: String { switch self { case .none: "No regular active play yet"; case .occasionally: "A laser pointer or toy once in a while"; case .weekly: "About 2–3 play days each week"; case .mostDays: "One short session on most days"; case .dailySeveral: "Two or more sessions most days" } }
+    var estimatedMinutes: Int { switch self { case .none: 0; case .occasionally: 3; case .weekly: 7; case .mostDays: 12; case .dailySeveral: 25 } }
+}
+
+struct BreedProfile: Identifiable, Hashable {
+    let name: String; let species: Species; let energy: Int; let social: Int
+    var id: String { "\(species.rawValue)-\(name)" }
+    static let all: [BreedProfile] = [
+        .init(name: "Mixed / not sure", species: .cat, energy: 3, social: 3), .init(name: "Domestic Shorthair", species: .cat, energy: 3, social: 3), .init(name: "Domestic Longhair", species: .cat, energy: 3, social: 3), .init(name: "Abyssinian", species: .cat, energy: 5, social: 4), .init(name: "Bengal", species: .cat, energy: 5, social: 4), .init(name: "British Shorthair", species: .cat, energy: 2, social: 3), .init(name: "Maine Coon", species: .cat, energy: 3, social: 4), .init(name: "Persian", species: .cat, energy: 1, social: 4), .init(name: "Ragdoll", species: .cat, energy: 2, social: 5), .init(name: "Russian Blue", species: .cat, energy: 3, social: 3), .init(name: "Siamese", species: .cat, energy: 4, social: 5), .init(name: "Sphynx", species: .cat, energy: 4, social: 5),
+        .init(name: "Mixed / not sure", species: .dog, energy: 3, social: 3), .init(name: "Australian Shepherd", species: .dog, energy: 5, social: 4), .init(name: "Beagle", species: .dog, energy: 4, social: 4), .init(name: "Border Collie", species: .dog, energy: 5, social: 4), .init(name: "Boxer", species: .dog, energy: 5, social: 5), .init(name: "Cavalier King Charles Spaniel", species: .dog, energy: 3, social: 5), .init(name: "Chihuahua", species: .dog, energy: 3, social: 4), .init(name: "Dachshund", species: .dog, energy: 3, social: 4), .init(name: "French Bulldog", species: .dog, energy: 2, social: 5), .init(name: "German Shepherd", species: .dog, energy: 4, social: 4), .init(name: "Golden Retriever", species: .dog, energy: 4, social: 5), .init(name: "Labrador Retriever", species: .dog, energy: 5, social: 5), .init(name: "Poodle", species: .dog, energy: 4, social: 4), .init(name: "Pug", species: .dog, energy: 2, social: 5), .init(name: "Shih Tzu", species: .dog, energy: 2, social: 5), .init(name: "Siberian Husky", species: .dog, energy: 5, social: 4)
+    ]
 }
 enum DietStyle: String, Codable, CaseIterable, Identifiable {
     case dry, wet, mixed, fresh, prescription, other
@@ -464,6 +480,7 @@ private extension String {
     var livingStyleRaw: String = LivingStyle.indoors.rawValue
     var dailyPlayGoalMinutes: Int = 15
     var activityGoalRaw: String = ActivityGoal.maintain.rawValue
+    var activityGoalRaws: [String] = [ActivityGoal.maintain.rawValue]
     var usesRecommendedPlayGoal: Bool = true
 
     init(name: String, species: Species, age: AgeBand, size: SizeBand, energy: EnergyLevel, exactAgeYears: Double? = nil, weightPounds: Double? = nil, breedGuess: String? = nil, limitations: Set<Limitation>, materials: Set<Material>, accountID: UUID? = nil, ownerUID: String? = nil) {
@@ -483,6 +500,7 @@ private extension String {
     var dietStyle: DietStyle { DietStyle(rawValue: dietStyleRaw) ?? .mixed }
     var livingStyle: LivingStyle { LivingStyle(rawValue: livingStyleRaw) ?? .indoors }
     var activityGoal: ActivityGoal { ActivityGoal(rawValue: activityGoalRaw) ?? .maintain }
+    var activityGoals: Set<ActivityGoal> { Set(activityGoalRaws.compactMap(ActivityGoal.init(rawValue:))) }
     var recentPlayIntent: PlayIntent? {
         guard let lastPlayContextAt,
               lastPlayContextAt >= (Calendar.current.date(byAdding: .hour, value: -12, to: .now) ?? .now),
