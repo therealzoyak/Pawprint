@@ -21,7 +21,15 @@ enum FoodMotivation: String, Codable, CaseIterable, Identifiable { case low, med
 enum SocialStyle: String, Codable, CaseIterable, Identifiable {
     case independent, nearby, interactive
     var id: Self { self }
-    var label: String { rawValue.capitalized }
+    var label: String {
+        switch self { case .independent: "Independent"; case .nearby: "Nearby"; case .interactive: "Clingy" }
+    }
+}
+enum ActivityGoal: String, Codable, CaseIterable, Identifiable {
+    case maintain, gentlyBuild, settleMore
+    var id: Self { self }
+    var label: String { switch self { case .maintain: "Keep their rhythm"; case .gentlyBuild: "Build more activity"; case .settleMore: "Balance busy energy" } }
+    var detail: String { switch self { case .maintain: "Support what is already working"; case .gentlyBuild: "Add movement gradually, without forcing it"; case .settleMore: "Mix active play with easier wind-downs" } }
 }
 enum DietStyle: String, Codable, CaseIterable, Identifiable {
     case dry, wet, mixed, fresh, prescription, other
@@ -278,8 +286,8 @@ enum PlayIntent: String, CaseIterable, Identifiable {
 
     func guidance(for species: Species) -> String {
         switch (species, self) {
-        case (.cat, .resting): "If your cat is asleep, let them sleep. Try this only after they wake and choose to engage."
-        case (.dog, .resting): "Let a sleeping dog rest. When they wake, invite them gently and stop if they prefer downtime."
+        case (.cat, .resting): "If they’re fully asleep, let them rest. If they’re drowsy but receptive, try slow blinks, cheek rubs, or quiet cuddling—no need to make them get up."
+        case (.dog, .resting): "Let a sleeping dog rest. If they’re awake and receptive, choose gentle petting or calm closeness instead of asking for high-energy play."
         case (_, .hungry): "Keep portions small, count food toward their daily meals, and stop if they become tense around food."
         case (.cat, _): "Invite—never chase or pick them up for play. Pause if their ears flatten, tail lashes, or they move away."
         case (.dog, _): "Start only if they choose to join. Pause for stiffness, repeated avoidance, or signs they need a break."
@@ -455,6 +463,8 @@ private extension String {
     var hoursAloneDaily: Double = 2
     var livingStyleRaw: String = LivingStyle.indoors.rawValue
     var dailyPlayGoalMinutes: Int = 15
+    var activityGoalRaw: String = ActivityGoal.maintain.rawValue
+    var usesRecommendedPlayGoal: Bool = true
 
     init(name: String, species: Species, age: AgeBand, size: SizeBand, energy: EnergyLevel, exactAgeYears: Double? = nil, weightPounds: Double? = nil, breedGuess: String? = nil, limitations: Set<Limitation>, materials: Set<Material>, accountID: UUID? = nil, ownerUID: String? = nil) {
         self.name = name; speciesRaw = species.rawValue; ageRaw = age.rawValue; sizeRaw = size.rawValue; energyRaw = energy.rawValue
@@ -472,6 +482,7 @@ private extension String {
     var socialStyle: SocialStyle { SocialStyle(rawValue: socialStyleRaw) ?? .nearby }
     var dietStyle: DietStyle { DietStyle(rawValue: dietStyleRaw) ?? .mixed }
     var livingStyle: LivingStyle { LivingStyle(rawValue: livingStyleRaw) ?? .indoors }
+    var activityGoal: ActivityGoal { ActivityGoal(rawValue: activityGoalRaw) ?? .maintain }
     var recentPlayIntent: PlayIntent? {
         guard let lastPlayContextAt,
               lastPlayContextAt >= (Calendar.current.date(byAdding: .hour, value: -12, to: .now) ?? .now),

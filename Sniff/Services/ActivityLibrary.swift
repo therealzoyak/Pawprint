@@ -122,6 +122,11 @@ struct ActivityLibrary {
             if pet.foodMotivation == .high && activity.category == .foraging { value += 14 }
             if pet.socialStyle == .interactive && activity.category == .social { value += 14 }
             if pet.noiseSensitive && activity.category == .calming { value += 18 }
+            // Materials are available options, never an instruction to use every
+            // object the owner happened to list. Prefer simpler starts when fit is equal.
+            value -= activity.materials.count * 5
+            if pet.recentPlayIntent == .resting && activity.materials.isEmpty { value += 28 }
+            if pet.recentPlayIntent == .resting && activity.category == .social { value += 24 }
 
             for signal in history where signal.activityID == activity.id {
                 if signal.earlyStopReason == .ownerStopped { continue }

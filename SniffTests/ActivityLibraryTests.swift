@@ -264,8 +264,16 @@ final class ActivityLibraryTests: XCTestCase {
     }
 
     func testRestingGuidanceProtectsSleep() {
-        XCTAssertTrue(PlayIntent.resting.guidance(for: .cat).localizedCaseInsensitiveContains("let them sleep"))
+        XCTAssertTrue(PlayIntent.resting.guidance(for: .cat).localizedCaseInsensitiveContains("let them rest"))
         XCTAssertTrue(PlayIntent.resting.guidance(for: .dog).localizedCaseInsensitiveContains("sleeping dog rest"))
+    }
+
+    func testMaterialsDoNotOutrankAnEquivalentSimpleActivity() throws {
+        let simple = activity("simple-bond", .social)
+        let propBased = activity("prop-bond", .social, materials: [.towel])
+        let library = try makeLibrary([propBased, simple])
+        let pet = makePet(materials: [.towel])
+        XCTAssertEqual(library.rankedRecommendations(for: pet, preferredCategories: [.social]).first?.id, simple.id)
     }
 
     private func makePet(name: String = "Milo", materials: Set<Material> = []) -> PetProfile {

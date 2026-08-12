@@ -49,12 +49,14 @@ struct LaunchSurface: View {
                 }.frame(height: 150)
                 Text("PAWPRINT").font(.system(size: 15, weight: .bold, design: .default)).tracking(2.4).foregroundStyle(Color.sniffPurple)
                 Text("Finding a little adventure…").font(.system(.headline, design: .default, weight: .semibold)).foregroundStyle(Color.sniffMuted)
-                Capsule().fill(Color.sniffLine).frame(width: 142, height: 8)
-                    .overlay(alignment: .leading) {
-                        Capsule().fill(LinearGradient(colors: [.sniffPurple, .sniffBerry, .sniffCoral], startPoint: .leading, endPoint: .trailing))
-                            .frame(width: 62, height: 8)
-                            .phaseAnimator(reduceMotion ? [false] : [false, true]) { content, moving in content.offset(x: moving ? 78 : 2) } animation: { _ in .easeInOut(duration: 0.7) }
-                    }.clipShape(Capsule())
+                HStack(spacing: 18) {
+                    ForEach(["pawprint.fill", "heart.fill", "sparkles"], id: \.self) { symbol in
+                        Image(systemName: symbol).foregroundStyle(Color.sniffPurple)
+                    }
+                }.font(.title3.bold())
+                    .phaseAnimator(reduceMotion ? [false] : [false, true]) { content, floating in
+                        content.offset(y: floating ? -4 : 3).scaleEffect(floating ? 1.03 : 0.97)
+                    } animation: { _ in .easeInOut(duration: 0.9) }
             }.padding(30)
         }.ignoresSafeArea().accessibilityElement(children: .combine).accessibilityLabel("Pawprint is opening")
     }
@@ -112,9 +114,9 @@ struct OnboardingView: View {
     @AppStorage("petDraft.name") private var name = ""
     @AppStorage("petDraft.ageYears") private var ageYears = 3.0
     @AppStorage("petDraft.weightPounds") private var weightPounds = 30.0
-    @AppStorage("petDraft.playDrive") private var playDrive = 2.0
-    @AppStorage("petDraft.stamina") private var stamina = 2.0
-    @AppStorage("petDraft.settleEase") private var settleEase = 2.0
+    @AppStorage("petDraft.playDrive") private var playDrive = -1.0
+    @AppStorage("petDraft.stamina") private var stamina = -1.0
+    @AppStorage("petDraft.settleEase") private var settleEase = -1.0
     @AppStorage("petDraft.limitations") private var limitationsDraft = ""
     @AppStorage("petDraft.materials") private var materialsDraft = "towel,cardboard"
     @AppStorage("petDraft.dayPeriods") private var dayPeriodsDraft = ""
@@ -134,6 +136,11 @@ struct OnboardingView: View {
     @AppStorage("petDraft.hoursAloneDaily") private var hoursAloneDaily = 2.0
     @AppStorage("petDraft.livingStyle") private var livingStyleRaw = LivingStyle.indoors.rawValue
     @AppStorage("petDraft.dailyPlayGoalMinutes") private var dailyPlayGoalMinutes = 15
+    @AppStorage("petDraft.activityGoal") private var activityGoalRaw = ActivityGoal.maintain.rawValue
+    @AppStorage("petDraft.useRecommendedGoal") private var useRecommendedGoal = true
+    @AppStorage("petDraft.currentDailyActiveMinutes") private var currentDailyActiveMinutes = 10
+    @AppStorage("petDraft.foodMotivationKnown") private var foodMotivationKnown = false
+    @AppStorage("petDraft.socialStyleKnown") private var socialStyleKnown = false
     @State private var limitations: Set<Limitation> = []
     @State private var materials: Set<Material> = [.towel, .cardboard]
     @State private var dayPeriods: Set<DayPeriod> = []
@@ -141,6 +148,8 @@ struct OnboardingView: View {
     @State private var isSaving = false
     @State private var saveError: String?
     private var species: Species { Species(rawValue: speciesRaw) ?? .dog }
+    private var activityGoal: ActivityGoal { ActivityGoal(rawValue: activityGoalRaw) ?? .maintain }
+    private var petName: String { name.isEmpty ? "your pet" : name }
     private var totalSteps: Int { 9 }
 
     var body: some View {
@@ -168,6 +177,8 @@ struct OnboardingView: View {
                 .onChange(of: limitations) { _, value in limitationsDraft = value.map(\.rawValue).sorted().joined(separator: ",") }
                 .onChange(of: materials) { _, value in materialsDraft = value.map(\.rawValue).sorted().joined(separator: ",") }
                 .onChange(of: dayPeriods) { _, value in dayPeriodsDraft = value.map(\.rawValue).sorted().joined(separator: ",") }
+                .onChange(of: foodMotivationRaw) { _, _ in foodMotivationKnown = true }
+                .onChange(of: socialStyleRaw) { _, _ in socialStyleKnown = true }
                 .sheet(isPresented: $scanningBreed) { BreedScanOnboardingPlaceholder(species: species) }
                 .alert("Couldn’t finish setup", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
                     Button("Try again") { saveError = nil }
@@ -272,15 +283,25 @@ struct OnboardingView: View {
         }
     }
     private var energyStep: some View {
-        FormSection(title: "How does \(name.isEmpty ? "your pet" : name) move through a day?") {
-            Text("Three quick observations are more useful than one vague ‘vibe.’ Your best guess is enough.").foregroundStyle(.secondary)
-            EnergyQuestion(title: "How often do they initiate play?", low: "Rarely", high: "All the time", value: $playDrive, color: .sniffCoral)
-            EnergyQuestion(title: "How long can they stay happily active?", low: "A few minutes", high: "A long session", value: $stamina, color: .sniffMint)
-            EnergyQuestion(title: "How easily do they settle afterward?", low: "Needs help", high: "Very easily", value: $settleEase, color: .sniffPurple)
-            HStack(spacing: 10) {
-                Image(systemName: energyLevel == .high ? "hare.fill" : energyLevel == .low ? "tortoise.fill" : "pawprint.fill").foregroundStyle(.white)
-                Text("We’ll start \(energyLevel.rawValue), then learn from what \(name.isEmpty ? "they" : name) actually enjoys.").font(.subheadline.bold())
-            }.padding().frame(maxWidth: .infinity, alignment: .leading).background(Color.sniffBlue, in: RoundedRectangle(cornerRadius: 18)).foregroundStyle(.white)
+        FormSection(title: "What is life like for \(petName) right now?") {
+            Text("There are no bad answers. Current habits give us a kind starting point—they do not limit what \(petName) can grow into.").foregroundStyle(.secondary)
+            EnergyQuestion(title: "How often does \(petName) ask to play?", low: "Hardly ever", high: "Constantly", value: $playDrive, color: .sniffCoral)
+            EnergyQuestion(title: "Once interested, how long do they keep going?", low: "A minute or two", high: "A long while", value: $stamina, color: .sniffMint)
+            EnergyQuestion(title: "After excitement, how easily do they relax?", low: "Needs support", high: "Settles easily", value: $settleEase, color: .sniffPurple)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("On a usual day, about how much active play happens?").font(.headline)
+                Stepper("About \(currentDailyActiveMinutes) minutes", value: $currentDailyActiveMinutes, in: 0...90, step: 5)
+                Text("An estimate is plenty. This helps us find room to support you, never judge the past.").font(.caption).foregroundStyle(.secondary)
+            }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
+            Text("What would you like Pawprint to help with?").font(.headline)
+            ForEach(ActivityGoal.allCases) { goal in
+                Button { activityGoalRaw = goal.rawValue } label: {
+                    HStack {
+                        VStack(alignment: .leading) { Text(goal.label).font(.headline); Text(goal.detail).font(.caption).foregroundStyle(.secondary) }
+                        Spacer(); if activityGoal == goal { Image(systemName: "checkmark.circle.fill") }
+                    }.padding().background(activityGoal == goal ? Color.sniffMint.opacity(0.2) : .white, in: RoundedRectangle(cornerRadius: 18))
+                }.buttonStyle(.plain)
+            }
         }
     }
     private var safetyStep: some View {
@@ -294,13 +315,16 @@ struct OnboardingView: View {
             Text("These are starting clues, not permanent labels. Today’s mood and your available time can always override them.").foregroundStyle(.secondary)
             Text("When are they usually most open to an activity?").font(.headline)
             ChoiceGrid(values: DayPeriod.allCases, selected: $dayPeriods) { $0.label }
+            NotSureButton(selected: dayPeriods.isEmpty) { dayPeriods.removeAll() }
             LabeledControl(title: "How motivating is food?") {
                 Picker("Food motivation", selection: $foodMotivationRaw) { ForEach(FoodMotivation.allCases) { Text($0.label).tag($0.rawValue) } }
                     .pickerStyle(.segmented)
+                NotSureButton(selected: !foodMotivationKnown) { foodMotivationKnown.toggle() }
             }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
-            LabeledControl(title: "How do they prefer your company?") {
+            LabeledControl(title: "How clingy or independent are they?") {
                 Picker("Social style", selection: $socialStyleRaw) { ForEach(SocialStyle.allCases) { Text($0.label).tag($0.rawValue) } }
                     .pickerStyle(.segmented)
+                NotSureButton(selected: !socialStyleKnown) { socialStyleKnown.toggle() }
             }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
             Toggle("Sensitive to sudden sounds", isOn: $noiseSensitive).padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
         }
@@ -339,13 +363,21 @@ struct OnboardingView: View {
         }
     }
     private var dailyGoalStep: some View {
-        FormSection(title: "A daily play goal") {
-            Text("Choose a gentle target for time together. Every minute counts, and missing a day never resets anything.").foregroundStyle(.secondary)
+        FormSection(title: "\(petName)’s starting plan") {
+            Text("Pawprint used age, size, current habits, energy, routine, and your goal. This is a flexible enrichment target—not medical advice or a test you can fail.").foregroundStyle(.secondary)
             VStack(spacing: 14) {
-                Text("\(dailyPlayGoalMinutes) minutes").font(.system(.largeTitle, design: .default, weight: .bold)).foregroundStyle(Color.sniffPurple)
-                Slider(value: Binding(get: { Double(dailyPlayGoalMinutes) }, set: { dailyPlayGoalMinutes = Int($0.rounded()) }), in: 5...60, step: 5).tint(.sniffPurple)
-                HStack { Text("5 min"); Spacer(); Text("60 min") }.font(.caption).foregroundStyle(.secondary)
+                Text("RECOMMENDED").font(.caption.bold()).tracking(1).foregroundStyle(Color.sniffPurple)
+                Text("\(recommendedDailyMinutes) minutes a day").font(.system(.largeTitle, design: .default, weight: .bold)).foregroundStyle(Color.sniffPurple)
+                Text(planExplanation).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
+            Picker("Plan type", selection: $useRecommendedGoal) { Text("Recommended").tag(true); Text("Set it myself").tag(false) }.pickerStyle(.segmented)
+            if !useRecommendedGoal {
+                VStack(spacing: 12) {
+                    Text("Manual target: \(dailyPlayGoalMinutes) minutes").font(.headline)
+                    Slider(value: Binding(get: { Double(dailyPlayGoalMinutes) }, set: { dailyPlayGoalMinutes = Int($0.rounded()) }), in: 5...60, step: 5).tint(.sniffPurple)
+                }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
+            }
+            Label("You can change the plan anytime as you learn more.", systemImage: "heart.fill").font(.subheadline.bold()).foregroundStyle(Color.sniffBlue)
         }
     }
     private func hourPicker(_ title: String, selection: Binding<Int>) -> some View {
@@ -383,7 +415,8 @@ struct OnboardingView: View {
             pet.dietStyleRaw = dietStyleRaw; pet.foodEnrichmentAllowed = foodEnrichmentAllowed; pet.wakeHour = wakeHour; pet.sleepHour = sleepHour
             pet.hasSnacks = hasSnacks; pet.snacksPerDay = hasSnacks ? snacksPerDay : 0; pet.snackKinds = hasSnacks ? snackKinds.trimmingCharacters(in: .whitespacesAndNewlines) : ""
             pet.hoursAloneDaily = hoursAloneDaily; pet.livingStyleRaw = livingStyleRaw
-            pet.dailyPlayGoalMinutes = dailyPlayGoalMinutes
+            pet.dailyPlayGoalMinutes = useRecommendedGoal ? recommendedDailyMinutes : dailyPlayGoalMinutes
+            pet.activityGoalRaw = activityGoalRaw; pet.usesRecommendedPlayGoal = useRecommendedGoal
             do {
                 try modelContext.save()
                 clearDraft()
@@ -413,8 +446,34 @@ struct OnboardingView: View {
         return weightPounds < 20 ? .small : weightPounds < 60 ? .medium : .large
     }
     private var energyLevel: EnergyLevel {
-        let score = (playDrive + stamina + (4 - settleEase)) / 3
+        let observations = [playDrive, stamina, settleEase >= 0 ? 4 - settleEase : -1].filter { $0 >= 0 }
+        guard !observations.isEmpty else { return .medium }
+        let score = observations.reduce(0, +) / Double(observations.count)
         return score < 1.5 ? .low : score > 2.7 ? .high : .medium
+    }
+    private var recommendedDailyMinutes: Int {
+        var minutes: Int
+        switch (species, ageBand) {
+        case (.cat, .young): minutes = 30
+        case (.cat, .adult): minutes = 20
+        case (.cat, .senior): minutes = 15
+        case (.dog, .young): minutes = 45
+        case (.dog, .adult): minutes = 30
+        case (.dog, .senior): minutes = 20
+        }
+        if energyLevel == .high { minutes += 5 }
+        if energyLevel == .low { minutes -= 5 }
+        if activityGoal == .gentlyBuild { minutes = max(minutes, min(currentDailyActiveMinutes + 5, 60)) }
+        if activityGoal == .settleMore { minutes = max(15, minutes - 5) }
+        if limitations.contains(.mobilityLimited) { minutes -= 5 }
+        return min(60, max(10, Int((Double(minutes) / 5).rounded()) * 5))
+    }
+    private var planExplanation: String {
+        switch activityGoal {
+        case .maintain: "A steady target based on their life stage and present-day rhythm. Short sessions can add up."
+        case .gentlyBuild: "A small step above current habits so activity can grow without dragging or waking them to perform."
+        case .settleMore: "A balanced target with active moments and calming connection, rather than nonstop high-energy play."
+        }
     }
     private func restoreDraftCollections() {
         limitations = Set(limitationsDraft.split(separator: ",").compactMap { Limitation(rawValue: String($0)) })
@@ -424,12 +483,13 @@ struct OnboardingView: View {
     }
     private func clearDraft() {
         step = 0; speciesRaw = Species.dog.rawValue; name = ""; ageYears = 3; weightPounds = 30
-        playDrive = 2; stamina = 2; settleEase = 2; limitationsDraft = ""; materialsDraft = "towel,cardboard"; dayPeriodsDraft = ""
+        playDrive = -1; stamina = -1; settleEase = -1; limitationsDraft = ""; materialsDraft = "towel,cardboard"; dayPeriodsDraft = ""
         foodMotivationRaw = FoodMotivation.medium.rawValue; socialStyleRaw = SocialStyle.nearby.rawValue; noiseSensitive = false
         mealsPerDay = 2; firstMealHour = 8; lastMealHour = 18; dietStyleRaw = DietStyle.mixed.rawValue; foodEnrichmentAllowed = true
         hasSnacks = true; snacksPerDay = 2; snackKinds = ""
         wakeHour = 7; sleepHour = 22; hoursAloneDaily = 2; livingStyleRaw = LivingStyle.indoors.rawValue
-        dailyPlayGoalMinutes = 15
+        dailyPlayGoalMinutes = 15; activityGoalRaw = ActivityGoal.maintain.rawValue; useRecommendedGoal = true; currentDailyActiveMinutes = 10
+        foodMotivationKnown = false; socialStyleKnown = false
     }
 }
 
@@ -438,9 +498,24 @@ struct EnergyQuestion: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             Text(title).font(.headline)
-            Slider(value: $value, in: 0...4, step: 1).tint(color)
-            HStack { Text(low); Spacer(); Text(high) }.font(.caption).foregroundStyle(.secondary)
+            if value >= 0 {
+                Slider(value: $value, in: 0...4, step: 1).tint(color)
+                HStack { Text(low); Spacer(); Text(high) }.font(.caption).foregroundStyle(.secondary)
+            } else {
+                Text("That’s okay—we’ll learn from their responses over time.").font(.caption).foregroundStyle(.secondary)
+            }
+            Button(value < 0 ? "Add my best guess" : "Not sure") { value = value < 0 ? 2 : -1 }
+                .font(.caption.bold()).foregroundStyle(color)
         }.padding().background(.white, in: RoundedRectangle(cornerRadius: 20))
+    }
+}
+
+struct NotSureButton: View {
+    let selected: Bool; let action: () -> Void
+    var body: some View {
+        Button(action: action) { Label("Not sure", systemImage: selected ? "checkmark.circle.fill" : "questionmark.circle") }
+            .font(.caption.bold()).foregroundStyle(selected ? Color.sniffBlue : Color.sniffMuted)
+            .frame(maxWidth: .infinity, alignment: .trailing).buttonStyle(.plain)
     }
 }
 
@@ -1342,6 +1417,7 @@ struct PlayTimeSheet: View {
     private var suggestions: [Activity] {
         guard let intent, let library else { return [] }
         var contextualCategories = intent.categories + dayPeriod.categories
+        if intent == .resting { contextualCategories = [.calming, .social] }
         if pet.isNearMeal() { contextualCategories.insert(.calming, at: 0) }
         if pet.foodMotivation == .high { contextualCategories.append(.foraging) }
         if pet.socialStyle == .interactive { contextualCategories.append(.social) }
@@ -1351,8 +1427,13 @@ struct PlayTimeSheet: View {
         }
         let petHistory = ActivityLibrary.history(for: pet, sessions: sessions)
         let petFavorites = Set(favorites.filter { $0.petID == pet.id }.map(\.activityID))
-        return Array(library.rankedRecommendations(for: pet, history: petHistory, favorites: petFavorites, preferredCategories: categories, maximumMinutes: availableMinutes)
-            .filter { activity in selectedPets.allSatisfy { player in activityFits(activity, pet: player) } }.prefix(3))
+        let ranked = library.rankedRecommendations(for: pet, history: petHistory, favorites: petFavorites, preferredCategories: categories, maximumMinutes: availableMinutes)
+            .filter { activity in selectedPets.allSatisfy { player in activityFits(activity, pet: player) } }
+        if intent == .resting {
+            let gentleConnection = ranked.filter { $0.materials.isEmpty && ($0.category == .calming || $0.category == .social) }
+            if !gentleConnection.isEmpty { return Array(gentleConnection.prefix(3)) }
+        }
+        return Array(ranked.prefix(3))
     }
     var body: some View {
         NavigationStack {
