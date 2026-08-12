@@ -46,3 +46,56 @@ Requested by Zoya · August 9, 2026
 - Increase color saturation across the existing palette so the app feels livelier and less dominated by cream and white.
 - Preserve the established design system, layouts, hierarchy, and interaction patterns; this is a color and copy polish pass, not a redesign.
 - Check contrast and legibility after adjusting colors, including locked, disabled, and secondary states.
+
+## 6. Resolve mood selection, time matching, and multi-activity recommendations
+
+### Discuss with Zaydan before implementing
+
+- Decide whether the Play mood choices are single-select or multi-select. The current UI looks single-select, but recommendations behave as though multiple contexts may be influencing the result.
+- Decide what a multi-activity session means:
+  - A planned sequence that fills the owner’s available time.
+  - A sequence that adapts as the pet’s energy changes.
+  - An optional alternative to one longer activity.
+- Decide whether multi-activity combinations deserve their own tab. Do not add the tab until the intended behavior is agreed upon.
+
+### Implement after the decision
+
+- Make the UI clearly reflect the chosen single-select or multi-select behavior.
+- Ensure Playful, Hungry, Sleepy, Checking in, and other moods produce meaningfully different ranked results.
+- Properly respect available time. A 20-minute opportunity should not repeatedly return only the same 3–5 minute ideas unless the UI explains that they are components of a longer combination.
+- If combinations are approved, show the total duration, activity order, transition logic, and whether the next activity changes based on the pet’s engagement or energy.
+- Add regression tests for mood differentiation, exact time matching, and combination duration.
+
+## 7. Celebrate daily goal completion
+
+- When a pet reaches their daily play target, show a fun, polished celebration inspired by activity-ring completion.
+- Mark the daily target clearly as complete on Home without introducing guilt, streak pressure, or excessive interruption.
+- Make the celebration happen once per pet per day and remain accurate across multiple sessions.
+
+## 8. Add future notification and account/profile placeholders
+
+### Discuss the information architecture with Zaydan first
+
+- Decide whether the owner account contains pet profiles, or whether the interface is primarily pet-first with owner settings beneath it.
+- Define where shared household settings, notifications, subscription/account information, and individual pet profiles belong.
+
+### Implement placeholders after the decision
+
+- Add a clear Notifications placeholder for future reminders and scheduling controls.
+- Add an Owner Profile placeholder and preserve the existing Pet Profile & Plan entry point.
+- Clearly label unavailable functionality as coming later; do not create controls that look operational when they are not.
+
+## 9. Make setup more delightful and validate required answers
+
+- Give the five-step setup a warmer, more playful feel inspired by polished pet apps while preserving Pawprint’s own visual identity.
+- Use centered, in-place motion only; avoid lateral floating or sliding entrances.
+- Add a concise inline validation flag when someone tries to continue without answering a mandatory question.
+- Keep each required setup screen within the viewport on supported phone sizes.
+- Keep advanced questions in progressive personalization after entering the app.
+
+## 10. Give each main area a distinct but consistent tint
+
+- Establish Home/Play as aqua, Fetch as purple, and Care as pale yellow/gold within the existing palette.
+- Apply these tints consistently to headers, selected states, primary actions, and subtle backgrounds without making screens loud or tacky.
+- Standardize margins, card spacing, corner radii, button heights, typography hierarchy, and icon treatment across all three areas.
+- Perform a final visual QA pass on compact and large iPhone sizes so the app feels professional, neat, and consistently playful.
