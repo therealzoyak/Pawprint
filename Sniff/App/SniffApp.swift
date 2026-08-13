@@ -7,7 +7,7 @@ struct PawprintApp: App {
     private let recoveredFromStoreIssue: Bool
 
     init() {
-        let schema = Schema([LocalAccount.self, PetProfile.self, EnrichmentSession.self, FavoriteActivity.self, ActivitySwap.self, EngagementEntry.self, HouseholdMember.self, CareTask.self, CareCompletion.self, PetNote.self])
+        let schema = Schema([LocalAccount.self, PetRelationship.self, PetProfile.self, EnrichmentSession.self, FavoriteActivity.self, ActivitySwap.self, EngagementEntry.self, HouseholdMember.self, CareTask.self, CareCompletion.self, PetNote.self])
         let testing = ProcessInfo.processInfo.arguments.contains("--phase-one-testing")
         do {
             container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: testing)])
@@ -32,8 +32,12 @@ extension Color {
     static let sniffInk = Color(red: 22/255, green: 48/255, blue: 54/255)
     static let sniffMuted = Color(red: 91/255, green: 116/255, blue: 121/255)
     static let sniffBlue = Color(red: 20/255, green: 137/255, blue: 158/255)
-    static let sniffPaper = Color(red: 248/255, green: 253/255, blue: 253/255)
-    static let sniffSurface = Color(red: 238/255, green: 249/255, blue: 249/255)
+    // A gently tinted canvas keeps adjoining cards and sections from breaking into
+    // isolated white rectangles. Reserve pure white for small, high-contrast details.
+    static let sniffPaper = Color(red: 239/255, green: 250/255, blue: 249/255)
+    static let sniffSurface = Color(red: 224/255, green: 245/255, blue: 243/255)
+    static let sniffCard = Color(red: 246/255, green: 251/255, blue: 248/255)
+    static let sniffWarmSurface = Color(red: 255/255, green: 244/255, blue: 229/255)
     static let sniffLine = Color(red: 207/255, green: 228/255, blue: 229/255)
     static let sniffCoral = Color(red: 235/255, green: 101/255, blue: 88/255)
     static let sniffMint = Color(red: 42/255, green: 157/255, blue: 126/255)

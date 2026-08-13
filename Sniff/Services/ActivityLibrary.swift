@@ -122,6 +122,20 @@ struct ActivityLibrary {
             if pet.foodMotivation == .high && activity.category == .foraging { value += 14 }
             if pet.socialStyle == .interactive && activity.category == .social { value += 14 }
             if pet.noiseSensitive && activity.category == .calming { value += 18 }
+            if pet.routineActivity == .high && activity.category == .physical { value += 14 }
+            if pet.routineActivity == .gentle && activity.category == .calming { value += 14 }
+            if pet.settleStyle == .difficult && activity.category == .calming { value += 22 }
+            if pet.peopleComfort == .prefersSpace && activity.category == .social { value -= 14 }
+            for preference in pet.playPreferences {
+                let preferred: [ActivityCategory] = switch preference {
+                case .chase, .fetch, .tug, .climb: [.physical]
+                case .sniff, .forage: [.foraging, .sensory]
+                case .puzzles, .training: [.cognitive]
+                case .stalk, .bat, .hide: [.sensory, .physical]
+                case .together: [.social]
+                }
+                if preferred.contains(activity.category) { value += 9 }
+            }
             // Materials are available options, never an instruction to use every
             // object the owner happened to list. Prefer simpler starts when fit is equal.
             value -= activity.materials.count * 5

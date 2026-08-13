@@ -180,9 +180,9 @@ enum ActivityCategory: String, Codable, CaseIterable, Identifiable {
     var isHighArousal: Bool { self == .physical }
 }
 enum Reaction: String, Codable, CaseIterable, Identifiable {
-    case loved = "Loved it", fine = "Fine", tooHard = "Too hard", notInterested = "Not interested"
+    case loved = "Loved it", fine = "Fine", tooHard = "Too hard", notInterested = "Not interested", unrated = "Not rated"
     var id: Self { self }
-    var symbol: String { switch self { case .loved: "heart.fill"; case .fine: "hand.thumbsup.fill"; case .tooHard: "tortoise.fill"; case .notInterested: "minus.circle.fill" } }
+    var symbol: String { switch self { case .loved: "heart.fill"; case .fine: "hand.thumbsup.fill"; case .tooHard: "tortoise.fill"; case .notInterested: "minus.circle.fill"; case .unrated: "questionmark.circle" } }
 }
 
 enum EarlyStopReason: String, Codable, CaseIterable, Identifiable {
@@ -439,6 +439,90 @@ private extension String {
     }
 }
 
+enum PetRelationshipKind: String, Codable, CaseIterable, Identifiable {
+    case bonded = "Bonded pair"
+    case friendly = "Friendly together"
+    case independent = "Mostly independent"
+    case needsSpace = "Need separate space"
+    var id: Self { self }
+    var detail: String {
+        switch self {
+        case .bonded: "They actively seek each other out and enjoy shared time."
+        case .friendly: "They are comfortable together, but do not need to do everything as a pair."
+        case .independent: "They share a home but usually prefer their own activities."
+        case .needsSpace: "Plan separate activities and avoid shared-resource suggestions."
+        }
+    }
+    var allowsSharedPlay: Bool { self == .bonded || self == .friendly }
+}
+
+enum AlterationStatus: String, Codable, CaseIterable, Identifiable {
+    case spayed = "Spayed"
+    case neutered = "Neutered"
+    case notAltered = "Not spayed or neutered"
+    case unknown = "Not sure"
+    case preferNotToSay = "Prefer not to say"
+    var id: Self { self }
+}
+
+enum PetSex: String, Codable, CaseIterable, Identifiable {
+    case female = "Female", male = "Male", unknown = "Not sure"
+    var id: Self { self }
+}
+
+enum RoutineActivityLevel: String, Codable, CaseIterable, Identifiable {
+    case gentle = "Mostly resting", light = "A little active", moderate = "Active in bursts", high = "Always on the go"
+    var id: Self { self }
+}
+
+enum SocialComfort: String, Codable, CaseIterable, Identifiable {
+    case eager = "Seeks them out", comfortable = "Comfortable", selective = "Choosy", prefersSpace = "Prefers space", unknown = "Not sure"
+    var id: Self { self }
+}
+
+enum HandlingComfort: String, Codable, CaseIterable, Identifiable {
+    case enjoys = "Enjoys touch", tolerates = "Usually okay", selective = "Only some touch", avoid = "Avoid handling"
+    var id: Self { self }
+}
+
+enum SettleStyle: String, Codable, CaseIterable, Identifiable {
+    case easy = "Settles easily", support = "Needs a little help", difficult = "Stays wound up"
+    var id: Self { self }
+}
+
+enum PlayPreference: String, Codable, CaseIterable, Identifiable {
+    case chase = "Chase", fetch = "Fetch", tug = "Tug", sniff = "Sniff & search", puzzles = "Puzzles", training = "Training games"
+    case stalk = "Stalk & pounce", bat = "Bat & swat", climb = "Climb", forage = "Forage", hide = "Hide & explore", together = "Play together"
+    var id: Self { self }
+    func fits(_ species: Species) -> Bool {
+        switch self {
+        case .fetch, .tug, .sniff, .training: species == .dog
+        case .stalk, .bat, .climb, .forage, .hide: species == .cat
+        case .chase, .puzzles, .together: true
+        }
+    }
+}
+
+@Model final class PetRelationship {
+    var id: UUID = UUID()
+    var accountID: UUID?
+    var firstPetID: UUID
+    var secondPetID: UUID
+    var kindRaw: String
+    var updatedAt: Date
+
+    init(accountID: UUID? = nil, firstPetID: UUID, secondPetID: UUID, kind: PetRelationshipKind) {
+        self.accountID = accountID
+        if firstPetID.uuidString < secondPetID.uuidString { self.firstPetID = firstPetID; self.secondPetID = secondPetID }
+        else { self.firstPetID = secondPetID; self.secondPetID = firstPetID }
+        kindRaw = kind.rawValue; updatedAt = .now
+    }
+    var kind: PetRelationshipKind { PetRelationshipKind(rawValue: kindRaw) ?? .independent }
+    func connects(_ first: UUID, _ second: UUID) -> Bool {
+        Set([firstPetID, secondPetID]) == Set([first, second])
+    }
+}
+
 @Model final class PetProfile {
     var id: UUID = UUID()
     var accountID: UUID?
@@ -451,6 +535,16 @@ private extension String {
     var ageYears: Double?
     var weightPounds: Double?
     var breedGuess: String?
+    var sexRaw: String = PetSex.unknown.rawValue
+    var alterationStatusRaw: String = AlterationStatus.unknown.rawValue
+    var routineActivityRaw: String = RoutineActivityLevel.moderate.rawValue
+    var peopleComfortRaw: String = SocialComfort.unknown.rawValue
+    var animalComfortRaw: String = SocialComfort.unknown.rawValue
+    var handlingComfortRaw: String = HandlingComfort.tolerates.rawValue
+    var settleStyleRaw: String = SettleStyle.support.rawValue
+    var playFrequencyRaw: String = PlayFrequency.occasionally.rawValue
+    var playPreferenceRaws: [String] = []
+    var dailyOutdoorExerciseMinutes: Int = 0
     @Attribute(.externalStorage) var avatarData: Data?
     var limitationRaws: [String]
     var materialRaws: [String]
@@ -502,6 +596,15 @@ private extension String {
     var livingStyle: LivingStyle { LivingStyle(rawValue: livingStyleRaw) ?? .indoors }
     var activityGoal: ActivityGoal { ActivityGoal(rawValue: activityGoalRaw) ?? .maintain }
     var activityGoals: Set<ActivityGoal> { Set(activityGoalRaws.compactMap(ActivityGoal.init(rawValue:))) }
+    var alterationStatus: AlterationStatus { AlterationStatus(rawValue: alterationStatusRaw) ?? .unknown }
+    var sex: PetSex { PetSex(rawValue: sexRaw) ?? .unknown }
+    var routineActivity: RoutineActivityLevel { RoutineActivityLevel(rawValue: routineActivityRaw) ?? .moderate }
+    var peopleComfort: SocialComfort { SocialComfort(rawValue: peopleComfortRaw) ?? .unknown }
+    var animalComfort: SocialComfort { SocialComfort(rawValue: animalComfortRaw) ?? .unknown }
+    var handlingComfort: HandlingComfort { HandlingComfort(rawValue: handlingComfortRaw) ?? .tolerates }
+    var settleStyle: SettleStyle { SettleStyle(rawValue: settleStyleRaw) ?? .support }
+    var playFrequency: PlayFrequency { PlayFrequency(rawValue: playFrequencyRaw) ?? .occasionally }
+    var playPreferences: Set<PlayPreference> { Set(playPreferenceRaws.compactMap(PlayPreference.init(rawValue:))) }
     var recentPlayIntent: PlayIntent? {
         guard let lastPlayContextAt,
               lastPlayContextAt >= (Calendar.current.date(byAdding: .hour, value: -12, to: .now) ?? .now),

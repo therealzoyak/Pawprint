@@ -4,6 +4,22 @@ import SwiftData
 
 @MainActor
 final class ActivityLibraryTests: XCTestCase {
+    func testPetRelationshipsOnlyAllowSharedPlayForConfirmedSocialPairs() {
+        let first = UUID(), second = UUID()
+        let bonded = PetRelationship(firstPetID: first, secondPetID: second, kind: .bonded)
+        XCTAssertTrue(bonded.connects(first, second))
+        XCTAssertTrue(bonded.kind.allowsSharedPlay)
+        XCTAssertFalse(PetRelationshipKind.independent.allowsSharedPlay)
+        XCTAssertFalse(PetRelationshipKind.needsSpace.allowsSharedPlay)
+    }
+
+    func testStructuredPlayPreferencesShapeRecommendations() throws {
+        let library = try makeLibrary([activity("move", .physical), activity("think", .cognitive)])
+        let pet = makePet()
+        pet.playPreferenceRaws = [PlayPreference.puzzles.rawValue, PlayPreference.training.rawValue]
+        XCTAssertEqual(library.recommendation(for: pet)?.id, "think")
+    }
+
     func testSeedLibraryDecodesAndCoversBothSpecies() throws {
         let library = try ActivityLibrary(bundle: Bundle(for: ActivityLibraryTests.self))
         XCTAssertFalse(library.activities.isEmpty)

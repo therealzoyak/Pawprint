@@ -7256,43 +7256,6 @@
     ]
   },
   {
-    "id": "master-cat-bonding-enrichment-through-slow-blinking-communication-sessions-on-the-window-perch-shelf",
-    "species": "cat",
-    "title": "Slow Blink",
-    "category": "social",
-    "tier": 1,
-    "durationMinutes": 5,
-    "materials": [],
-    "description": "Deepen trust and encourage mutual grooming comfort using slow blinking communication sessions while your cat relaxes safely on the window perch shelf.",
-    "whyItWorks": "This creates an easy moment of shared play.",
-    "steps": [
-      "Set up the activity in a familiar, clear space.",
-      "Invite your pet to explore—no need to force or rush them.",
-      "Pause while they are still having fun and put everything away."
-    ],
-    "safetyNotes": [
-      "Supervise the whole time and stop if your pet backs away or seems uncomfortable."
-    ],
-    "ageBands": [
-      "young",
-      "adult",
-      "senior"
-    ],
-    "sizeBands": [
-      "small",
-      "medium",
-      "large"
-    ],
-    "energyLevels": [
-      "low",
-      "medium",
-      "high"
-    ],
-    "exclusions": [
-      "anxious"
-    ]
-  },
-  {
     "id": "master-cat-bonding-enrichment-through-chin-scratching-rituals-on-the-shoulder-riding-position",
     "species": "cat",
     "title": "Chin Scritches",
