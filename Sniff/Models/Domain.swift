@@ -95,7 +95,7 @@ enum Material: String, Codable, CaseIterable, Identifiable {
     }
     var icon: String {
         switch self {
-        case .kibble, .treats: "carrot.fill"
+        case .kibble, .treats: "circle.grid.3x3.fill"
         case .towel, .blanket, .sock, .pillow: "square.grid.3x3.fill"
         case .cardboard, .eggCarton, .toiletRoll, .paperBag, .paper: "shippingbox.fill"
         case .muffinTin, .cups, .iceCubeTray: "circle.grid.3x3.fill"
@@ -494,6 +494,22 @@ enum PlayPreference: String, Codable, CaseIterable, Identifiable {
     case chase = "Chase", fetch = "Fetch", tug = "Tug", sniff = "Sniff & search", puzzles = "Puzzles", training = "Training games"
     case stalk = "Stalk & pounce", bat = "Bat & swat", climb = "Climb", forage = "Forage", hide = "Hide & explore", together = "Play together"
     var id: Self { self }
+    var ownerLabel: String {
+        switch self {
+        case .chase: "Chasing toys"
+        case .fetch: "Fetch"
+        case .tug: "Tug"
+        case .sniff: "Sniff-and-find games"
+        case .puzzles: "Food or toy puzzles"
+        case .training: "Learning tricks"
+        case .stalk: "Stalking and pouncing"
+        case .bat: "Batting small toys"
+        case .climb: "Climbing and perching"
+        case .forage: "Treat hunts"
+        case .hide: "Boxes and tunnels"
+        case .together: "Playing with me"
+        }
+    }
     func fits(_ species: Species) -> Bool {
         switch self {
         case .fetch, .tug, .sniff, .training: species == .dog

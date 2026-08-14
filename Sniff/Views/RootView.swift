@@ -149,12 +149,20 @@ struct OnboardingView: View {
     @AppStorage("petDraft.name") private var name = ""
     @AppStorage("petDraft.ageYears") private var ageYears = 3.0
     @AppStorage("petDraft.weightPounds") private var weightPounds = 30.0
+    @AppStorage("petDraft.sex") private var sexRaw = PetSex.unknown.rawValue
+    @AppStorage("petDraft.alterationStatus") private var alterationStatusRaw = AlterationStatus.unknown.rawValue
+    @AppStorage("petDraft.routineActivity") private var routineActivityRaw = RoutineActivityLevel.moderate.rawValue
+    @AppStorage("petDraft.dailyOutdoorExerciseMinutes") private var dailyOutdoorExerciseMinutes = 25
+    @AppStorage("petDraft.peopleComfort") private var peopleComfortRaw = SocialComfort.unknown.rawValue
+    @AppStorage("petDraft.animalComfort") private var animalComfortRaw = SocialComfort.unknown.rawValue
+    @AppStorage("petDraft.handlingComfort") private var handlingComfortRaw = HandlingComfort.tolerates.rawValue
     @AppStorage("petDraft.playDrive") private var playDrive = -1.0
     @AppStorage("petDraft.stamina") private var stamina = -1.0
     @AppStorage("petDraft.settleEase") private var settleEase = -1.0
     @AppStorage("petDraft.limitations") private var limitationsDraft = ""
     @AppStorage("petDraft.materials") private var materialsDraft = "towel,cardboard"
     @AppStorage("petDraft.dayPeriods") private var dayPeriodsDraft = ""
+    @AppStorage("petDraft.preferredDayPeriod") private var preferredDayPeriodRaw = DayPeriod.evening.rawValue
     @AppStorage("petDraft.foodMotivation") private var foodMotivationRaw = FoodMotivation.medium.rawValue
     @AppStorage("petDraft.socialStyle") private var socialStyleRaw = SocialStyle.nearby.rawValue
     @AppStorage("petDraft.noiseSensitive") private var noiseSensitive = false
@@ -190,7 +198,7 @@ struct OnboardingView: View {
     private var species: Species { Species(rawValue: speciesRaw) ?? .dog }
     private var activityGoal: ActivityGoal { ActivityGoal(rawValue: activityGoalRaw) ?? .maintain }
     private var petName: String { name.isEmpty ? "your pet" : name }
-    private var totalSteps: Int { 5 }
+    private var totalSteps: Int { 8 }
     private var playFrequency: PlayFrequency { PlayFrequency(rawValue: playFrequencyRaw) ?? .occasionally }
     private var breedProfile: BreedProfile? { BreedProfile.all.first { $0.species == species && $0.name == breedDraft } }
 
@@ -254,7 +262,10 @@ struct OnboardingView: View {
         case 0: speciesStep
         case 1: essentialsStep
         case 2: breedStep
-        case 3: playHabitStep
+        case 3: dailyLifeStep
+        case 4: playAndFoodStep
+        case 5: safetyAndSocialStep
+        case 6: goalStep
         default: dailyGoalStep
         }
     }
@@ -319,6 +330,10 @@ struct OnboardingView: View {
                 HStack { Text("Weight").font(.headline); Spacer(); Text("\(Int(weightPounds.rounded())) lb").foregroundStyle(Color.sniffMint) }
                 SmartSlider(value: $weightPounds, range: 2...weightMaximum, step: 1, color: .sniffMint)
             }.padding(13).background(Color.sniffCard, in: RoundedRectangle(cornerRadius: 17))
+            Text("Sex").font(.headline)
+            onboardingChoiceGrid(PetSex.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $sexRaw, color: .sniffPurple)
+            Text("Spayed or neutered").font(.headline)
+            onboardingChoiceGrid(AlterationStatus.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $alterationStatusRaw, color: .sniffMint)
         }
     }
     private var ageAndSizeStep: some View {
@@ -376,6 +391,76 @@ struct OnboardingView: View {
                 }.buttonStyle(.plain).sensoryFeedback(.selection, trigger: playFrequency == item)
             }
         }
+    }
+    private var dailyLifeStep: some View {
+        QuestionScreen(color: .sniffLavender, symbol: "house.fill", title: "What does a normal day look like?", subtitle: "These basics keep suggestions realistic for \(petName)’s routine.") {
+            LabeledControl(title: "Time alone on a usual day", hint: String(format: "%.1f hours", hoursAloneDaily)) {
+                SmartSlider(value: $hoursAloneDaily, range: 0...12, step: 0.5, color: .sniffPurple)
+            }.padding(13).background(Color.sniffCard, in: RoundedRectangle(cornerRadius: 17))
+            Text(species == .cat ? "Does \(petName) go outdoors?" : "Where does most activity happen?").font(.headline)
+            onboardingChoiceGrid(livingStyleChoices, selection: $livingStyleRaw, color: .sniffAqua)
+            if species == .dog {
+                VStack(alignment: .leading, spacing: 7) {
+                    HStack { Text("Walks and outdoor exercise").font(.headline); Spacer(); Text("\(dailyOutdoorExerciseMinutes) min/day").font(.subheadline.bold()).foregroundStyle(Color.sniffMango) }
+                    Stepper("Outdoor exercise", value: $dailyOutdoorExerciseMinutes, in: 0...120, step: 5).labelsHidden()
+                }.padding(13).background(Color.sniffCard, in: RoundedRectangle(cornerRadius: 17))
+            }
+            Text("Typical activity level").font(.headline)
+            onboardingChoiceGrid(RoutineActivityLevel.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $routineActivityRaw, color: .sniffMango)
+            Text("Usually best time for play").font(.headline)
+            onboardingChoiceGrid(DayPeriod.allCases.map { ($0.label, $0.rawValue) }, selection: $preferredDayPeriodRaw, color: .sniffPurple)
+        }
+    }
+    private var playAndFoodStep: some View {
+        QuestionScreen(color: .sniffPeach, symbol: "figure.play", title: "How does play fit into their day?", subtitle: "A simple baseline helps the first recommendations feel achievable.") {
+            Text("How often do you actively play together?").font(.headline)
+            ForEach(PlayFrequency.allCases) { item in
+                Button { playFrequencyRaw = item.rawValue } label: {
+                    HStack { VStack(alignment: .leading, spacing: 3) { Text(item.label).font(.headline); Text(item.detail).font(.caption).foregroundStyle(.secondary) }; Spacer(); Image(systemName: playFrequency == item ? "checkmark.circle.fill" : "circle") }
+                        .padding(.horizontal, 14).padding(.vertical, 10).background(playFrequency == item ? Color.sniffCoral.opacity(0.15) : Color.sniffCard, in: RoundedRectangle(cornerRadius: 17))
+                }.buttonStyle(.plain)
+            }
+            Toggle("Food can be used in play ideas", isOn: $foodEnrichmentAllowed).tint(.sniffMango)
+                .padding(13).background(Color.sniffCard, in: RoundedRectangle(cornerRadius: 17))
+            if foodEnrichmentAllowed {
+                Text("How motivating is food?").font(.headline)
+                onboardingChoiceGrid(FoodMotivation.allCases.map { ($0.label, $0.rawValue) }, selection: $foodMotivationRaw, color: .sniffMango)
+            }
+        }
+    }
+    private var safetyAndSocialStep: some View {
+        QuestionScreen(color: .sniffButter, symbol: "shield.checkered", title: "What should Pawprint plan around?", subtitle: "These details prevent unsuitable social, food, movement, and handling ideas.") {
+            Text("Comfort with people").font(.headline)
+            onboardingChoiceGrid(SocialComfort.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $peopleComfortRaw, color: .sniffSky)
+            Text("Comfort with other animals").font(.headline)
+            onboardingChoiceGrid(SocialComfort.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $animalComfortRaw, color: .sniffSky)
+            Text("Touch and handling").font(.headline)
+            onboardingChoiceGrid(HandlingComfort.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $handlingComfortRaw, color: .sniffCoral)
+            Toggle("Sensitive to loud or sudden sounds", isOn: $noiseSensitive).tint(.sniffCoral)
+                .padding(13).background(Color.sniffCard, in: RoundedRectangle(cornerRadius: 17))
+            Text("Anything else to avoid?").font(.headline)
+            ChoiceGrid(values: Limitation.allCases, selected: $limitations) { $0.label }
+        }
+    }
+    private func onboardingChoiceGrid(_ choices: [(String, String)], selection: Binding<String>, color: Color) -> some View {
+        LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
+            ForEach(choices, id: \.1) { choice in
+                Button { selection.wrappedValue = choice.1 } label: {
+                    HStack(spacing: 6) {
+                        Text(choice.0).font(.subheadline.bold()).lineLimit(2)
+                        Spacer(minLength: 2)
+                        Image(systemName: selection.wrappedValue == choice.1 ? "checkmark.circle.fill" : "circle")
+                    }.frame(maxWidth: .infinity, minHeight: 42, alignment: .leading).padding(.horizontal, 11).padding(.vertical, 6)
+                        .background(selection.wrappedValue == choice.1 ? color.opacity(0.18) : Color.sniffCard, in: RoundedRectangle(cornerRadius: 15))
+                }.buttonStyle(.plain)
+            }
+        }
+    }
+    private var livingStyleChoices: [(String, String)] {
+        if species == .cat {
+            return [("Indoor only", LivingStyle.indoors.rawValue), ("Indoor + outdoor / catio", LivingStyle.both.rawValue), ("Mostly outdoors", LivingStyle.outdoors.rawValue)]
+        }
+        return [("Mostly indoors", LivingStyle.indoors.rawValue), ("Indoors + outdoors", LivingStyle.both.rawValue), ("Mostly outdoors", LivingStyle.outdoors.rawValue)]
     }
     private var goalStep: some View {
         QuestionScreen(color: .sniffButter, symbol: "heart.fill", title: "What should Pawprint help with?", subtitle: "Choose up to three, or pick A little of everything.") {
@@ -532,12 +617,17 @@ struct OnboardingView: View {
         else {
             isSaving = true
             let pet = PetProfile(name: name.trimmingCharacters(in: .whitespaces), species: species, age: ageBand, size: sizeBand, energy: energyLevel, exactAgeYears: ageYears, weightPounds: weightPounds, limitations: limitations, materials: materials, accountID: accountID, ownerUID: ownerUID)
-            pet.preferredDayPeriodRaws = dayPeriods.map(\.rawValue).sorted(); pet.foodMotivationRaw = foodMotivationRaw
+            pet.preferredDayPeriodRaws = [preferredDayPeriodRaw]; pet.foodMotivationRaw = foodMotivationRaw
             pet.socialStyleRaw = socialStyleRaw; pet.noiseSensitive = noiseSensitive; modelContext.insert(pet)
             pet.mealsPerDay = mealsPerDay; pet.firstMealHour = firstMealHour; pet.lastMealHour = mealsPerDay > 1 ? lastMealHour : firstMealHour
             pet.dietStyleRaw = dietStyleRaw; pet.foodEnrichmentAllowed = foodEnrichmentAllowed; pet.wakeHour = wakeHour; pet.sleepHour = sleepHour
             pet.hasSnacks = hasSnacks; pet.snacksPerDay = hasSnacks ? snacksPerDay : 0; pet.snackKinds = hasSnacks ? snackKinds.trimmingCharacters(in: .whitespacesAndNewlines) : ""
             pet.hoursAloneDaily = hoursAloneDaily; pet.livingStyleRaw = livingStyleRaw
+            pet.sexRaw = sexRaw; pet.alterationStatusRaw = alterationStatusRaw
+            pet.routineActivityRaw = routineActivityRaw
+            pet.dailyOutdoorExerciseMinutes = species == .dog ? dailyOutdoorExerciseMinutes : 0
+            pet.peopleComfortRaw = peopleComfortRaw; pet.animalComfortRaw = animalComfortRaw
+            pet.handlingComfortRaw = handlingComfortRaw
             pet.playFrequencyRaw = playFrequencyRaw
             pet.dailyPlayGoalMinutes = useRecommendedGoal ? recommendedDailyMinutes : dailyPlayGoalMinutes
             pet.activityGoalRaw = ActivityGoal.maintain.rawValue; pet.activityGoalRaws = [ActivityGoal.maintain.rawValue]; pet.usesRecommendedPlayGoal = useRecommendedGoal
@@ -574,7 +664,13 @@ struct OnboardingView: View {
     }
     private var energyLevel: EnergyLevel {
         let observations = [playDrive, stamina, settleEase >= 0 ? 4 - settleEase : -1].filter { $0 >= 0 }
-        guard !observations.isEmpty else { return .medium }
+        guard !observations.isEmpty else {
+            switch RoutineActivityLevel(rawValue: routineActivityRaw) ?? .moderate {
+            case .gentle: return .low
+            case .high: return .high
+            case .light, .moderate: return .medium
+            }
+        }
         let score = observations.reduce(0, +) / Double(observations.count)
         return score < 1.5 ? .low : score > 2.7 ? .high : .medium
     }
@@ -612,7 +708,10 @@ struct OnboardingView: View {
     }
     private func clearDraft() {
         step = 0; speciesRaw = Species.dog.rawValue; name = ""; ageYears = 3; weightPounds = 30
-        playDrive = -1; stamina = -1; settleEase = -1; limitationsDraft = ""; materialsDraft = "towel,cardboard"; dayPeriodsDraft = ""
+        sexRaw = PetSex.unknown.rawValue; alterationStatusRaw = AlterationStatus.unknown.rawValue
+        routineActivityRaw = RoutineActivityLevel.moderate.rawValue; dailyOutdoorExerciseMinutes = 25
+        peopleComfortRaw = SocialComfort.unknown.rawValue; animalComfortRaw = SocialComfort.unknown.rawValue; handlingComfortRaw = HandlingComfort.tolerates.rawValue
+        playDrive = -1; stamina = -1; settleEase = -1; limitationsDraft = ""; materialsDraft = "towel,cardboard"; dayPeriodsDraft = ""; preferredDayPeriodRaw = DayPeriod.evening.rawValue
         foodMotivationRaw = FoodMotivation.medium.rawValue; socialStyleRaw = SocialStyle.nearby.rawValue; noiseSensitive = false
         mealsPerDay = 2; firstMealHour = 8; lastMealHour = 18; dietStyleRaw = DietStyle.mixed.rawValue; foodEnrichmentAllowed = true
         hasSnacks = true; snacksPerDay = 2; snackKinds = ""
@@ -644,7 +743,7 @@ struct QuestionScreen<Content: View>: View {
     init(color: Color, symbol: String, title: String, subtitle: String, @ViewBuilder content: () -> Content) { self.color = color; self.symbol = symbol; self.title = title; self.subtitle = subtitle; self.content = content() }
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Image(systemName: symbol).font(.title2.bold()).foregroundStyle(Color.sniffInk).frame(width: 48, height: 48).background(color, in: Circle())
+            Image(systemName: "pawprint.fill").font(.title2.bold()).foregroundStyle(Color.sniffInk).frame(width: 48, height: 48).background(color, in: Circle())
                 .phaseAnimator([false, true]) { view, up in view.offset(y: up ? -3 : 2).scaleEffect(up ? 1.04 : 0.98) } animation: { _ in .easeInOut(duration: 1.2) }
             Text(title).font(.system(size: 29, weight: .bold, design: .rounded)).lineLimit(3).minimumScaleFactor(0.75)
             Text(subtitle).font(.body).foregroundStyle(.secondary)
@@ -1055,194 +1154,248 @@ struct FinishPersonalizationView: View {
     @Environment(\.modelContext) private var modelContext
     let pet: PetProfile
     @State private var step = 0
-    @State private var ageYears: Double
-    @State private var sexRaw: String
-    @State private var alterationStatusRaw: String
-    @State private var hoursAloneDaily: Double
-    @State private var preferredDayPeriodRaw: String
-    @State private var livingStyleRaw: String
-    @State private var dailyOutdoorExerciseMinutes: Int
-    @State private var routineActivityRaw: String
-    @State private var playFrequencyRaw: String
     @State private var playPreferences: Set<PlayPreference>
-    @State private var peopleComfortRaw: String
-    @State private var animalComfortRaw: String
-    @State private var handlingComfortRaw: String
+    @State private var socialStyleRaw: String
+    @State private var foodMotivationRaw: String
     @State private var settleStyleRaw: String
-    @State private var selectedLimitations: Set<Limitation>
-    @State private var noiseSensitive: Bool
+    @State private var showingBadge = false
 
     init(pet: PetProfile) {
         self.pet = pet
-        _ageYears = State(initialValue: pet.ageYears ?? 3)
-        _sexRaw = State(initialValue: pet.sexRaw)
-        _alterationStatusRaw = State(initialValue: pet.alterationStatusRaw)
-        _hoursAloneDaily = State(initialValue: pet.hoursAloneDaily)
-        _preferredDayPeriodRaw = State(initialValue: pet.preferredDayPeriods.first?.rawValue ?? DayPeriod.evening.rawValue)
-        _livingStyleRaw = State(initialValue: pet.livingStyleRaw)
-        _dailyOutdoorExerciseMinutes = State(initialValue: pet.dailyOutdoorExerciseMinutes)
-        _routineActivityRaw = State(initialValue: pet.routineActivityRaw)
-        _playFrequencyRaw = State(initialValue: pet.playFrequencyRaw)
         _playPreferences = State(initialValue: pet.playPreferences)
-        _peopleComfortRaw = State(initialValue: pet.peopleComfortRaw)
-        _animalComfortRaw = State(initialValue: pet.animalComfortRaw)
-        _handlingComfortRaw = State(initialValue: pet.handlingComfortRaw)
+        _socialStyleRaw = State(initialValue: pet.socialStyleRaw)
+        _foodMotivationRaw = State(initialValue: pet.foodMotivationRaw)
         _settleStyleRaw = State(initialValue: pet.settleStyleRaw)
-        _selectedLimitations = State(initialValue: pet.limitations)
-        _noiseSensitive = State(initialValue: pet.noiseSensitive)
     }
 
     var body: some View {
-        NavigationStack {
+        Group {
+        if showingBadge {
+            PersonalizationBadgeCelebration(pet: pet) { dismiss() }
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+        } else { NavigationStack {
             ZStack {
-                PetCareBackdrop()
-                VStack(spacing: 10) {
-                    HStack(spacing: 10) {
-                        PetAvatar(pet: pet, size: 46, animated: false)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("FINISH PERSONALIZATION").font(.caption2.bold()).tracking(1.1).foregroundStyle(Color.sniffPurple)
-                            Text("A better fit for \(pet.name)").font(.headline)
-                        }
-                        Spacer()
-                    }
-                    HStack(spacing: 4) { ForEach(0..<stepCount, id: \.self) { index in Capsule().fill(index <= step ? stepColor : Color.sniffLine).frame(height: 6) } }
-                    HStack { Text(stepTitle).font(.title3.bold()).lineLimit(2); Spacer(); Text("\(step + 1)/\(stepCount)").font(.caption.bold()).foregroundStyle(Color.sniffMuted) }
-                    ScrollView { personalizationStep.id(step).transition(.opacity) }.scrollIndicators(.hidden)
-                }.padding(.horizontal, 18).padding(.top, 10)
+                PetCareBackdrop(accent: .sniffMango)
+                VStack(spacing: 14) {
+                    header
+                    ScrollView {
+                        stepCard.id(step).transition(.opacity.combined(with: .move(edge: .trailing)))
+                    }.scrollIndicators(.hidden)
+                }
+                .padding(.horizontal, 18).padding(.top, 8)
             }
-            .navigationTitle("Quick details").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Later") { dismiss() } } }
-            .safeAreaInset(edge: .bottom) {
-                HStack(spacing: 10) {
-                    if step > 0 { Button { step -= 1 } label: { Image(systemName: "chevron.left").frame(width: 46, height: 46) }.buttonStyle(.bordered).buttonBorderShape(.roundedRectangle(radius: 15)) }
-                    Button(action: advance) { HStack { Text(step == stepCount - 1 ? "Finish" : "Continue"); Spacer(); Image(systemName: step == stepCount - 1 ? "checkmark" : "arrow.right") } }
-                        .buttonStyle(PrimaryButtonStyle()).disabled(!canContinue).opacity(canContinue ? 1 : 0.5)
-                }.padding(.horizontal, 18).padding(.vertical, 10).background(.ultraThinMaterial)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Later") { dismiss() } } }
+            .safeAreaInset(edge: .bottom) { footer }
+            .animation(.spring(response: 0.34, dampingFraction: 0.84), value: step)
+        } }
+        }
+        .animation(.spring(response: 0.48, dampingFraction: 0.82), value: showingBadge)
+        .sensoryFeedback(.success, trigger: showingBadge)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 11) {
+                PetAvatar(pet: pet, size: 44, animated: false)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("FINISHING TOUCHES").font(.caption2.bold()).tracking(1.2).foregroundStyle(Color.sniffGold)
+                    Text("Fine-tune \(pet.name)’s play").font(.title3.bold())
+                }
+                Spacer()
             }
-            .animation(.spring(response: 0.35, dampingFraction: 0.82), value: step)
+            HStack(spacing: 5) {
+                ForEach(0..<stepCount, id: \.self) { index in
+                    Capsule().fill(index <= step ? Color.sniffMango : Color.white.opacity(0.58)).frame(height: 5)
+                }
+            }
+            HStack(alignment: .firstTextBaseline) {
+                Text(stepTitle).font(.system(.title2, design: .rounded, weight: .bold))
+                Spacer()
+                Text("\(step + 1) of \(stepCount)").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
+            }
+            Text(stepSubtitle).font(.subheadline).foregroundStyle(Color.sniffMuted)
+            Text(homeContext)
+                .font(.caption.bold()).foregroundStyle(Color.sniffInk.opacity(0.72))
+                .padding(.horizontal, 11).padding(.vertical, 7)
+                .background(.ultraThinMaterial, in: Capsule())
         }
     }
 
-    @ViewBuilder private var personalizationStep: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: stepIcon).font(.headline.bold()).foregroundStyle(.white).frame(width: 40, height: 40).background(stepColor, in: Circle())
-                Text(stepSubtitle).font(.subheadline).foregroundStyle(Color.sniffMuted).fixedSize(horizontal: false, vertical: true)
-            }
-            switch step {
-            case 0:
-                HStack { Text("Age").font(.headline); Spacer(); Text(ageLabel).font(.title3.bold()).foregroundStyle(stepColor) }
-                SmartSlider(value: $ageYears, range: 0.25...22, step: 0.25, color: stepColor)
-                choiceGrid(PetSex.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $sexRaw)
-            case 1:
-                choiceGrid(AlterationStatus.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $alterationStatusRaw)
-            case 2:
-                Text("Usual time alone").font(.headline)
-                numericChoiceGrid([(1, "Under 2 hr"), (3, "2–4 hr"), (6, "4–8 hr"), (10, "8+ hr")], selection: $hoursAloneDaily)
-                Text("Best time for play").font(.headline).padding(.top, 2)
-                choiceGrid(DayPeriod.allCases.map { ($0.label, $0.rawValue) }, selection: $preferredDayPeriodRaw)
-            case 3:
-                if pet.species == .dog {
-                    Text("Walks and outdoor exercise per day").font(.headline)
-                    intChoiceGrid([(10, "Under 15 min"), (25, "15–30 min"), (45, "30–60 min"), (75, "60+ min")], selection: $dailyOutdoorExerciseMinutes)
-                } else {
-                    Text("Home lifestyle").font(.headline)
-                    choiceGrid(LivingStyle.allCases.map { ($0 == .indoors ? "Indoor" : $0 == .outdoors ? "Outdoor" : "Indoor + outdoor", $0.rawValue) }, selection: $livingStyleRaw)
+    private var stepCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if step == 0 {
+                ForEach(PlayPreference.allCases.filter { $0.fits(pet.species) }) { preference in
+                    selectionRow(
+                        title: preference.ownerLabel,
+                        selected: playPreferences.contains(preference)
+                    ) {
+                        if playPreferences.contains(preference) { playPreferences.remove(preference) }
+                        else { playPreferences.insert(preference) }
+                    }
                 }
-                Text("Typical energy").font(.headline).padding(.top, 2)
-                choiceGrid(RoutineActivityLevel.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $routineActivityRaw)
-            case 4:
-                Text("How often do you actively play together?").font(.headline)
-                choiceGrid(PlayFrequency.allCases.map { ($0.label, $0.rawValue) }, selection: $playFrequencyRaw)
-                Text("Favorite kinds of play · choose all that fit").font(.headline).padding(.top, 2)
-                multiChoiceGrid(PlayPreference.allCases.filter { $0.fits(pet.species) })
-            case 5:
-                Text("With people").font(.headline)
-                choiceGrid(SocialComfort.allCases.filter { $0 != .unknown }.map { ($0.rawValue, $0.rawValue) }, selection: $peopleComfortRaw)
-                Text("With other animals").font(.headline).padding(.top, 2)
-                choiceGrid(SocialComfort.allCases.filter { $0 != .unknown }.map { ($0.rawValue, $0.rawValue) }, selection: $animalComfortRaw)
-            case 6:
-                Text("Touch and handling").font(.headline)
-                choiceGrid(HandlingComfort.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $handlingComfortRaw)
-                Text("After excitement").font(.headline).padding(.top, 2)
-                choiceGrid(SettleStyle.allCases.map { ($0.rawValue, $0.rawValue) }, selection: $settleStyleRaw)
-            default:
-                Text("Choose anything Pawprint should plan around").font(.headline)
-                sensitivityGrid
-            }
-        }.frame(maxWidth: .infinity, alignment: .leading).padding(16)
-            .background(LinearGradient(colors: [stepColor.opacity(0.25), .sniffCard, Color.sniffLavender.opacity(0.38)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
-            .overlay { RoundedRectangle(cornerRadius: 28).stroke(stepColor.opacity(0.35), lineWidth: 1.5) }
-    }
-    private func choiceGrid(_ choices: [(String, String)], selection: Binding<String>) -> some View {
-        LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) {
-            ForEach(choices, id: \.1) { choice in
-                Button { selection.wrappedValue = choice.1 } label: {
-                    HStack { Text(choice.0).font(.subheadline.bold()).lineLimit(2); Spacer(); if selection.wrappedValue == choice.1 { Image(systemName: "checkmark.circle.fill") } }
-                        .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading).padding(.horizontal, 11).padding(.vertical, 5)
-                        .background(selection.wrappedValue == choice.1 ? stepColor.opacity(0.2) : Color.sniffCard.opacity(0.9), in: RoundedRectangle(cornerRadius: 14))
-                }.buttonStyle(.plain)
+            } else if step == 1 {
+                Text("Most often, they prefer…").font(.headline).padding(.bottom, 2)
+                selectionRow(title: "Doing their own thing", selected: socialStyleRaw == SocialStyle.independent.rawValue) { socialStyleRaw = SocialStyle.independent.rawValue }
+                selectionRow(title: "Being near me", selected: socialStyleRaw == SocialStyle.nearby.rawValue) { socialStyleRaw = SocialStyle.nearby.rawValue }
+                selectionRow(title: "Playing directly with me", selected: socialStyleRaw == SocialStyle.interactive.rawValue) { socialStyleRaw = SocialStyle.interactive.rawValue }
+                Divider().padding(.vertical, 5)
+                Text("Are treats a good motivator?").font(.headline).padding(.bottom, 2)
+                selectionRow(title: "Rarely", selected: foodMotivationRaw == FoodMotivation.low.rawValue) { foodMotivationRaw = FoodMotivation.low.rawValue }
+                selectionRow(title: "Sometimes", selected: foodMotivationRaw == FoodMotivation.medium.rawValue) { foodMotivationRaw = FoodMotivation.medium.rawValue }
+                selectionRow(title: "Definitely", selected: foodMotivationRaw == FoodMotivation.high.rawValue) { foodMotivationRaw = FoodMotivation.high.rawValue }
+            } else {
+                Text("After an exciting activity, they…").font(.headline).padding(.bottom, 2)
+                ForEach(SettleStyle.allCases) { style in
+                    selectionRow(title: settleLabel(style), selected: settleStyleRaw == style.rawValue) {
+                        settleStyleRaw = style.rawValue
+                    }
+                }
             }
         }
+        .padding(14)
+        .pawprintGlass(tint: .sniffMango, cornerRadius: 26)
     }
-    private func numericChoiceGrid(_ choices: [(Double, String)], selection: Binding<Double>) -> some View {
-        LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) { ForEach(choices, id: \.0) { choice in
-            Button { selection.wrappedValue = choice.0 } label: { Text(choice.1).font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 38).padding(.vertical, 5).background(selection.wrappedValue == choice.0 ? stepColor.opacity(0.2) : Color.sniffCard.opacity(0.9), in: RoundedRectangle(cornerRadius: 14)) }.buttonStyle(.plain)
-        } }
+
+    private func selectionRow(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(title).font(.body.weight(.semibold)).multilineTextAlignment(.leading)
+                Spacer()
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3).foregroundStyle(selected ? Color.sniffMango : Color.sniffMuted)
+            }
+            .foregroundStyle(Color.sniffInk)
+            .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+            .padding(.horizontal, 14)
+            .background(selected ? Color.sniffButter.opacity(0.75) : Color.white.opacity(0.6), in: RoundedRectangle(cornerRadius: 16))
+        }.buttonStyle(.plain)
     }
-    private func intChoiceGrid(_ choices: [(Int, String)], selection: Binding<Int>) -> some View {
-        LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) { ForEach(choices, id: \.0) { choice in
-            Button { selection.wrappedValue = choice.0 } label: { Text(choice.1).font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 38).padding(.vertical, 5).background(selection.wrappedValue == choice.0 ? stepColor.opacity(0.2) : Color.sniffCard.opacity(0.9), in: RoundedRectangle(cornerRadius: 14)) }.buttonStyle(.plain)
-        } }
+
+    private var footer: some View {
+        HStack(spacing: 10) {
+            if step > 0 {
+                Button { step -= 1 } label: { Image(systemName: "chevron.left").frame(width: 46, height: 46) }
+                    .buttonStyle(.bordered).buttonBorderShape(.roundedRectangle(radius: 15))
+            }
+            Button(action: advance) {
+                HStack {
+                    Text(step == stepCount - 1 ? "Save preferences" : "Continue")
+                    Spacer()
+                    Image(systemName: step == stepCount - 1 ? "checkmark" : "arrow.right")
+                }
+            }.buttonStyle(PrimaryButtonStyle()).disabled(!canContinue).opacity(canContinue ? 1 : 0.5)
+        }
+        .padding(.horizontal, 18).padding(.vertical, 10).background(.ultraThinMaterial)
     }
-    private func multiChoiceGrid(_ choices: [PlayPreference]) -> some View {
-        LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 8) { ForEach(choices) { choice in
-            Button { if playPreferences.contains(choice) { playPreferences.remove(choice) } else { playPreferences.insert(choice) } } label: { HStack { Text(choice.rawValue).font(.subheadline.bold()); Spacer(); Image(systemName: playPreferences.contains(choice) ? "checkmark.circle.fill" : "circle") }.frame(maxWidth: .infinity, minHeight: 38).padding(.horizontal, 11).padding(.vertical, 5).background(playPreferences.contains(choice) ? stepColor.opacity(0.16) : .white, in: RoundedRectangle(cornerRadius: 14)) }.buttonStyle(.plain)
-        } }
+
+    private let stepCount = 3
+    private var stepTitle: String {
+        ["What do they reach for?", "How do they like to play?", "How do they wind down?"][step]
     }
-    private var sensitivityGrid: some View {
-        VStack(spacing: 8) {
-            sensitivityButton("Loud or sudden sounds", selected: noiseSensitive) { noiseSensitive.toggle() }
-            sensitivityButton("Mobility or pain limits", selected: selectedLimitations.contains(.mobilityLimited)) { toggleLimitation(.mobilityLimited) }
-            sensitivityButton("Food allergies", selected: selectedLimitations.contains(.foodAllergy)) { toggleLimitation(.foodAllergy) }
-            sensitivityButton("Guards food or toys", selected: selectedLimitations.contains(.resourceGuarding)) { toggleLimitation(.resourceGuarding) }
-            sensitivityButton("None of these", selected: !noiseSensitive && selectedLimitations.intersection([.mobilityLimited, .foodAllergy, .resourceGuarding]).isEmpty) { noiseSensitive = false; selectedLimitations.subtract([.mobilityLimited, .foodAllergy, .resourceGuarding]) }
+    private var stepSubtitle: String {
+        [
+            "Choose the kinds of play \(pet.name) already enjoys. Pawprint can build variety from there.",
+            "This decides whether ideas lean independent, side-by-side, or hands-on.",
+            "This helps balance energetic ideas with an ending that feels comfortable."
+        ][step]
+    }
+    private var homeContext: String {
+        let setting: String = switch pet.livingStyle {
+        case .indoors: "Indoor"
+        case .outdoors: "Outdoor"
+        case .both: "Indoor + outdoor"
+        }
+        return "\(setting) \(pet.species.rawValue) · recommendations will use this setting"
+    }
+    private func settleLabel(_ style: SettleStyle) -> String {
+        switch style {
+        case .easy: "Relax pretty quickly"
+        case .support: "Need a calm transition"
+        case .difficult: "Stay energized for a while"
         }
     }
-    private func sensitivityButton(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) { HStack { Text(title).font(.subheadline.bold()); Spacer(); Image(systemName: selected ? "checkmark.circle.fill" : "circle") }.padding(12).background(selected ? stepColor.opacity(0.16) : .white, in: RoundedRectangle(cornerRadius: 14)) }.buttonStyle(.plain)
-    }
-    private func toggleLimitation(_ item: Limitation) { if selectedLimitations.contains(item) { selectedLimitations.remove(item) } else { selectedLimitations.insert(item) } }
-    private let stepCount = 8
-    private var stepTitle: String { ["Age and sex", "Spayed or neutered", "Daily routine", pet.species == .dog ? "Movement and walks" : "Lifestyle and energy", "How they play", "Their social world", "Comfort and recovery", "Plan around these"][step] }
-    private var stepSubtitle: String { ["Life stage changes which activities are a good fit.", "A simple profile detail—not a judgment or diagnosis.", "Timing matters as much as the activity itself.", pet.species == .dog ? "Count walks, outdoor play, and other active time." : "Indoor and outdoor lives create different enrichment needs.", "Pawprint will favor familiar fun while adding variety.", "Comfort is more useful than calling every pet social or shy.", "Handling preferences and settling speed shape gentler choices.", "These choices keep recommendations safer and more comfortable."][step] }
-    private var stepIcon: String { ["birthday.cake.fill", "cross.case.fill", "clock.fill", "figure.walk", "figure.play", "person.2.fill", "heart.text.square.fill", "shield.checkered"][step] }
-    private var stepColor: Color { [Color.sniffAqua, .sniffMint, .sniffBerry, .sniffMango, .sniffPurple, .sniffSky, .sniffCoral, .sniffGold][step] }
-    private var ageLabel: String { ageYears < 2 ? "\(Int((ageYears * 12).rounded())) months" : String(format: "%.1f years", ageYears) }
-    private var canContinue: Bool {
-        switch step {
-        case 0: !sexRaw.isEmpty
-        case 1: !alterationStatusRaw.isEmpty
-        case 4: !playPreferences.isEmpty
-        case 5: peopleComfortRaw != SocialComfort.unknown.rawValue && animalComfortRaw != SocialComfort.unknown.rawValue
-        default: true
-        }
-    }
+    private var canContinue: Bool { step != 0 || !playPreferences.isEmpty }
+
     private func advance() {
         guard canContinue else { return }
         if step < stepCount - 1 { step += 1 }
         else {
-            pet.ageYears = ageYears; pet.sexRaw = sexRaw; pet.alterationStatusRaw = alterationStatusRaw
-            pet.hoursAloneDaily = hoursAloneDaily; pet.preferredDayPeriodRaws = [preferredDayPeriodRaw]
-            pet.livingStyleRaw = livingStyleRaw; pet.dailyOutdoorExerciseMinutes = dailyOutdoorExerciseMinutes
-            pet.routineActivityRaw = routineActivityRaw; pet.playFrequencyRaw = playFrequencyRaw
             pet.playPreferenceRaws = playPreferences.map(\.rawValue).sorted()
-            pet.peopleComfortRaw = peopleComfortRaw; pet.animalComfortRaw = animalComfortRaw
-            pet.handlingComfortRaw = handlingComfortRaw; pet.settleStyleRaw = settleStyleRaw
-            pet.limitationRaws = selectedLimitations.map(\.rawValue).sorted(); pet.noiseSensitive = noiseSensitive
-            pet.profilePersonalizationComplete = true; pet.profileUpdatedAt = .now
-            try? modelContext.save(); dismiss()
+            pet.socialStyleRaw = socialStyleRaw
+            pet.foodMotivationRaw = foodMotivationRaw
+            pet.settleStyleRaw = settleStyleRaw
+            pet.profilePersonalizationComplete = true
+            pet.profileUpdatedAt = .now
+            try? modelContext.save()
+            showingBadge = true
         }
+    }
+}
+
+struct PersonalizationBadgeCelebration: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let pet: PetProfile
+    let continueAction: () -> Void
+    @State private var celebrating = false
+    private let particleColors: [Color] = [.sniffMango, .sniffAqua, .sniffPurple, .sniffCoral, .sniffMint]
+
+    var body: some View {
+        ZStack {
+            PetCareBackdrop(accent: .sniffMango)
+            particles
+            VStack(spacing: 18) {
+                Spacer()
+                Text("BADGE EARNED").font(.caption.bold()).tracking(1.8).foregroundStyle(Color.sniffGold)
+                badge
+                Text("+1 BADGE")
+                    .font(.caption.bold()).tracking(1)
+                    .foregroundStyle(Color.sniffGold)
+                    .padding(.horizontal, 13).padding(.vertical, 8)
+                    .background(Color.sniffButter.opacity(0.8), in: Capsule())
+                VStack(spacing: 6) {
+                    Text("All About \(pet.name)")
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .multilineTextAlignment(.center)
+                    Text("Pawprint is ready.").font(.title3).foregroundStyle(Color.sniffMuted)
+                }
+                Spacer()
+                Button("Continue", action: continueAction).buttonStyle(PrimaryButtonStyle())
+            }.padding(24)
+        }
+        .onAppear { celebrating = true }
+    }
+
+    private var badge: some View {
+        ZStack {
+            Circle().fill(Color.sniffMango.opacity(0.12)).frame(width: 210, height: 210)
+            Circle().stroke(Color.white.opacity(0.72), lineWidth: 2).frame(width: 170, height: 170)
+            Circle().fill(LinearGradient(colors: [.sniffMango, .sniffCoral], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .frame(width: 150, height: 150)
+                .shadow(color: Color.sniffMango.opacity(0.32), radius: 22, y: 12)
+            Image(systemName: "pawprint.fill").font(.system(size: 62, weight: .bold)).foregroundStyle(.white)
+            Image(systemName: "sparkles").font(.title2.bold()).foregroundStyle(Color.sniffButter).offset(x: 64, y: -58)
+        }
+        .scaleEffect(celebrating && !reduceMotion ? 1 : 0.72)
+        .rotationEffect(.degrees(celebrating && !reduceMotion ? 0 : -8))
+        .animation(.spring(response: 0.64, dampingFraction: 0.64), value: celebrating)
+        .accessibilityLabel("All About \(pet.name) badge earned")
+    }
+
+    private var particles: some View {
+        GeometryReader { proxy in
+            ForEach(0..<14, id: \.self) { index in
+                Image(systemName: index.isMultiple(of: 3) ? "sparkle" : "circle.fill")
+                    .font(.system(size: CGFloat(7 + index % 4) * 1.4, weight: .bold))
+                    .foregroundStyle(particleColors[index % particleColors.count])
+                    .rotationEffect(.degrees(Double(index * 31)))
+                    .position(
+                        x: proxy.size.width * CGFloat(0.09 + (Double((index * 37) % 82) / 100)),
+                        y: celebrating ? proxy.size.height * CGFloat(0.12 + (Double((index * 23) % 60) / 100)) : proxy.size.height * 0.54
+                    )
+                    .opacity(celebrating ? 0.78 : 0)
+                    .animation(reduceMotion ? nil : .spring(response: 0.8, dampingFraction: 0.78).delay(Double(index) * 0.025), value: celebrating)
+            }
+        }.allowsHitTesting(false)
     }
 }
 
@@ -1584,7 +1737,8 @@ struct TodayView: View {
     @State private var showingBadges = false
     @State private var showingGoalCelebration = false
     @State private var selectedBadgeID: String?
-    @State private var playTagline = "Make today pawsome"
+    @State private var previewActivity: Activity?
+    @State private var suggestionFlipped = false
     private let library = try? ActivityLibrary()
     private var activity: Activity? {
         return library?.recommendation(for: pet, history: ActivityLibrary.history(for: pet, sessions: sessions), favorites: Set(petFavorites.map(\.activityID)))
@@ -1602,11 +1756,11 @@ struct TodayView: View {
     }
     var body: some View {
         ZStack(alignment: .top) {
-            PetCareBackdrop()
+            PetCareBackdrop(accent: activity?.category.accent ?? .sniffAqua)
             ScrollView {
                 VStack(spacing: 16) {
                     petBlock
-                    if shouldSuggestProfileCheckIn { profileCheckIn }
+                    if !pet.profilePersonalizationComplete { profileCheckIn }
                     playBlock
                     quickWidgets
                 }
@@ -1622,53 +1776,26 @@ struct TodayView: View {
         .sheet(isPresented: $finishingPersonalization) { FinishPersonalizationView(pet: pet) }
         .sheet(isPresented: $showingProgress) { progressDetail }
         .sheet(isPresented: $showingBadges) { badgeLibrary }
+        .sheet(item: $previewActivity) { activity in
+            ActivityPreviewSheet(activity: activity, pet: pet)
+        }
         .fullScreenCover(isPresented: $showingGoalCelebration) {
             DailyGoalCelebrationView(pet: pet, minutes: todayMinutes) { showingGoalCelebration = false }
         }
         .onAppear {
-            playTagline = playTaglines.randomElement() ?? playTagline
             presentGoalCelebrationIfNeeded()
         }
         .onChange(of: todayMinutes) { _, _ in presentGoalCelebrationIfNeeded() }
     }
     private var petBlock: some View {
-        VStack(spacing: 14) {
-            HStack(spacing: 15) {
-                PetAvatar(pet: pet, size: 74, animated: true, showsAccessory: false)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Hello, \(pet.name)!").font(.custom("AvenirNext-DemiBold", size: 24, relativeTo: .title2))
-                Text("\(recentWeekSessions.count) \(recentWeekSessions.count == 1 ? "play" : "plays") this week")
-                    .font(.custom("AvenirNext-Medium", size: 13, relativeTo: .caption)).foregroundStyle(Color.sniffMuted)
-                }
-                Spacer()
-            }
-            Button { showingProgress = true } label: {
-                VStack(spacing: 11) {
-                    progressRow(
-                        title: "Today",
-                        value: todayMinutes,
-                        goal: pet.dailyPlayGoalMinutes,
-                        icon: "sun.max.fill",
-                        color: .sniffMango,
-                        showsChevron: true
-                    )
-                    progressRow(
-                        title: "This week",
-                        value: recentMinutes,
-                        goal: pet.dailyPlayGoalMinutes * 7,
-                        icon: "calendar",
-                        color: .sniffPurple,
-                        showsChevron: false
-                    )
-                }
-                .foregroundStyle(Color.sniffInk).padding(.horizontal, 12).padding(.vertical, 9)
-                .background(Color.sniffSurface, in: RoundedRectangle(cornerRadius: 20))
-                .overlay { RoundedRectangle(cornerRadius: 20).stroke(Color.sniffAqua.opacity(0.12)) }
-            }.buttonStyle(.plain).accessibilityHint("Shows weekly progress and badges")
-        }.padding(17)
-            .background(LinearGradient(colors: [Color.sniffSky.opacity(0.27), .sniffSurface, Color.sniffLavender.opacity(0.82)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 26))
-            .overlay { RoundedRectangle(cornerRadius: 26).stroke(Color.sniffAqua.opacity(0.18)) }
-            .shadow(color: Color.sniffAqua.opacity(0.1), radius: 14, y: 7)
+        Button { showingProgress = true } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Progress").font(.headline)
+                progressRow(title: "Today", value: todayMinutes, goal: pet.dailyPlayGoalMinutes, icon: "sun.max.fill", color: .sniffMango, showsChevron: true)
+                progressRow(title: "This week", value: recentMinutes, goal: pet.dailyPlayGoalMinutes * 7, icon: "calendar", color: .sniffPurple, showsChevron: false)
+            }.foregroundStyle(Color.sniffInk).padding(15)
+        }.buttonStyle(.plain).pawprintGlass(tint: activity?.category.accent ?? .sniffAqua, cornerRadius: 24)
+            .accessibilityHint("Shows weekly progress and badges")
     }
     private func progressRow(title: String, value: Int, goal: Int, icon: String, color: Color, showsChevron: Bool) -> some View {
         VStack(spacing: 5) {
@@ -1678,53 +1805,119 @@ struct TodayView: View {
                 Spacer()
                 if showsChevron { Image(systemName: "chevron.right").font(.caption2.bold()).foregroundStyle(Color.sniffPurple) }
             }
-            ProgressView(value: Double(value), total: Double(max(goal, 1)))
-                .tint(value >= goal ? .sniffMint : color)
+            ProgressView(value: Double(value), total: Double(max(goal, 1))).tint(value >= goal ? .sniffMint : color)
         }
     }
-    private var shouldSuggestProfileCheckIn: Bool {
-        let staleDate = Calendar.current.date(byAdding: .day, value: -30, to: .now) ?? .now
-        let recentSignals = petSessions.prefix(3)
-        let changedBehavior = recentSignals.filter { $0.reaction == .notInterested || $0.reaction == .tooHard || $0.earlyStopReason == .uncomfortable }.count >= 2
-        return !pet.profilePersonalizationComplete || pet.profileUpdatedAt < staleDate || changedBehavior
-    }
     private var profileCheckIn: some View {
-        Button {
-            if pet.profilePersonalizationComplete { editingProfile = true }
-            else { finishingPersonalization = true }
-        } label: {
+        Button { finishingPersonalization = true } label: {
             HStack(spacing: 12) {
-                Image(systemName: "slider.horizontal.3").foregroundStyle(Color.sniffPurple)
+                Image(systemName: "sparkles").font(.headline.bold()).foregroundStyle(.white)
+                    .frame(width: 42, height: 42).background(LinearGradient(colors: [.sniffMango, .sniffGold], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(pet.profilePersonalizationComplete ? "Has anything changed?" : "Finish personalizing \(pet.name)").font(.subheadline.bold())
-                    Text(pet.profilePersonalizationComplete ? "A quick profile check can improve today’s ideas." : "Add personality, routines, sensitivities, and goals anytime.").font(.caption).foregroundStyle(Color.sniffMuted)
+                    Text("Finish personalizing \(pet.name)").font(.headline)
+                    Text("Three quick details unlock better-matched ideas.").font(.caption).foregroundStyle(Color.sniffMuted)
                 }
                 Spacer()
-                if !pet.profilePersonalizationComplete { Text("+1 badge").font(.caption.bold()).foregroundStyle(Color.sniffPurple) }
-                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
-            }.padding(14).background(pet.profilePersonalizationComplete ? Color.sniffLavender.opacity(0.65) : Color.sniffButter.opacity(0.82), in: RoundedRectangle(cornerRadius: 20))
-        }.buttonStyle(.plain)
-            .gentleFloat(x: -1, y: 2.5, rotation: -0.3, duration: 2.75)
+                Text("+1 badge").font(.caption.bold()).foregroundStyle(Color.sniffGold)
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(Color.sniffGold)
+            }.padding(14)
+                .background(LinearGradient(colors: [Color.sniffButter.opacity(0.7), Color.sniffMango.opacity(0.12)], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 22))
+        }.buttonStyle(.plain).pawprintGlass(tint: .sniffMango, cornerRadius: 22)
             .accessibilityIdentifier("today.profileCheckIn")
     }
     private var playBlock: some View {
-        Button { showingPlaySheet = true } label: {
-            VStack(spacing: 10) {
+        VStack(spacing: 0) {
+            Button { showingPlaySheet = true } label: {
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Play").font(.title2.bold())
+                        Text(playPhrase).font(.subheadline).foregroundStyle(.white.opacity(0.86))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.headline.bold()).foregroundStyle(.white.opacity(0.8))
+                }
+                .frame(maxWidth: .infinity).foregroundStyle(.white).padding(17).contentShape(Rectangle())
+            }.buttonStyle(.plain).accessibilityIdentifier("today.startPlay")
+                .background(LinearGradient(colors: [.sniffAqua.opacity(0.92), Color.sniffPurple.opacity(0.74)], startPoint: .topLeading, endPoint: .bottomTrailing))
+
+            if let suggestion = activity {
                 ZStack {
-                    Circle().stroke(.white.opacity(0.58), lineWidth: 1.5)
-                    Image(systemName: "play.fill").font(.system(size: 21, weight: .semibold)).offset(x: 1)
-                }.frame(width: 52, height: 52).foregroundStyle(.white)
-                    .phaseAnimator(reduceMotion ? [false] : [false, true]) { content, active in
-                        content.scaleEffect(active ? 1.045 : 0.98).rotationEffect(.degrees(active ? 1.5 : -1.5))
-                    } animation: { _ in .easeInOut(duration: 1.25) }
-                Text("Play with \(pet.name)").font(.custom("AvenirNext-DemiBold", size: 23, relativeTo: .title2))
-                Text(playTagline).font(.custom("AvenirNext-Medium", size: 15, relativeTo: .subheadline)).foregroundStyle(.white.opacity(0.9))
-            }.frame(maxWidth: .infinity).foregroundStyle(.white).padding(20).contentShape(Rectangle())
-        }.buttonStyle(.plain)
-            .accessibilityIdentifier("today.startPlay")
-            .background(LinearGradient(colors: [.sniffAqua, Color(red: 0.02, green: 0.70, blue: 0.66)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
-            .overlay { RoundedRectangle(cornerRadius: 28).stroke(.white.opacity(0.34), lineWidth: 1) }
-            .shadow(color: Color.sniffAqua.opacity(0.25), radius: 16, y: 8)
+                    suggestedActivityFront(suggestion)
+                        .opacity(suggestionFlipped ? 0 : 1)
+                        .rotation3DEffect(.degrees(suggestionFlipped && !reduceMotion ? 90 : 0), axis: (x: 0, y: 1, z: 0), perspective: 0.7)
+                    suggestedActivityBack(suggestion)
+                        .opacity(suggestionFlipped ? 1 : 0)
+                        .rotation3DEffect(.degrees(suggestionFlipped || reduceMotion ? 0 : -90), axis: (x: 0, y: 1, z: 0), perspective: 0.7)
+                }
+                .contentShape(Rectangle())
+                .gesture(
+                    TapGesture(count: 2).exclusively(before: TapGesture(count: 1)).onEnded { result in
+                        switch result {
+                        case .first:
+                            withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.8)) { suggestionFlipped.toggle() }
+                        case .second:
+                            previewActivity = suggestion
+                        }
+                    }
+                )
+                .accessibilityAction(named: "Quick look") {
+                    withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.8)) { suggestionFlipped.toggle() }
+                }
+                .background(.ultraThinMaterial)
+                .accessibilityElement(children: .contain)
+                .accessibilityHint("Double-tap the card to flip between its summary and description")
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 28))
+        .overlay { RoundedRectangle(cornerRadius: 28).stroke(LinearGradient(colors: [.white.opacity(0.7), .white.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1) }
+        .shadow(color: Color.sniffAqua.opacity(0.18), radius: 16, y: 8)
+    }
+    private func suggestedActivityFront(_ suggestion: Activity) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 17).fill(suggestion.category.softColor)
+                Image(systemName: suggestionCategoryIcon(suggestion.category))
+                    .font(.system(size: 25, weight: .semibold)).foregroundStyle(suggestion.category.accent)
+            }.frame(width: 68, height: 68)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("FOR RIGHT NOW").font(.caption2.bold()).tracking(1).foregroundStyle(suggestion.category.accent)
+                Text(suggestion.displayTitle).font(.headline).foregroundStyle(Color.sniffInk).lineLimit(2)
+                Text("\(suggestion.durationMinutes) min · \(suggestion.category.funLabel)").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
+                Text("Double-tap for a quick look").font(.caption2).foregroundStyle(Color.sniffMuted)
+            }
+            Spacer(minLength: 3)
+        }.padding(11)
+    }
+    private var playPhrase: String {
+        guard let category = activity?.category else { return "\(pet.name)’s next favorite is waiting." }
+        switch category {
+        case .foraging: return "\(pet.name) is ready to search."
+        case .sensory: return "\(pet.name) is ready to explore."
+        case .cognitive: return "\(pet.name) is feeling curious."
+        case .physical: return "\(pet.name) has energy to spend."
+        case .social: return "\(pet.name) wants you nearby."
+        case .calming: return "\(pet.name) could use a soft moment."
+        }
+    }
+    private func suggestedActivityBack(_ suggestion: Activity) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("WHAT YOU’LL DO").font(.caption2.bold()).tracking(1).foregroundStyle(suggestion.category.accent)
+                Text(suggestion.description).font(.subheadline.weight(.semibold)).foregroundStyle(Color.sniffInk).lineLimit(3)
+                Text("Double-tap to flip back").font(.caption2).foregroundStyle(Color.sniffMuted)
+            }
+            Spacer(minLength: 4)
+        }.frame(maxWidth: .infinity, minHeight: 90, alignment: .leading).padding(.horizontal, 14).padding(.vertical, 8)
+    }
+    private func suggestionCategoryIcon(_ category: ActivityCategory) -> String {
+        switch category {
+        case .foraging: "magnifyingglass"
+        case .sensory: "wind"
+        case .cognitive: "puzzlepiece.fill"
+        case .physical: "figure.run"
+        case .social: "heart.fill"
+        case .calming: "moon.stars.fill"
+        }
     }
     private var quickWidgets: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -1751,12 +1944,9 @@ struct TodayView: View {
                         Label("Nothing due today", systemImage: "checkmark.circle.fill")
                             .font(.custom("AvenirNext-Medium", size: 14, relativeTo: .subheadline)).foregroundStyle(Color.sniffCoral)
                     }
-                }
-                .frame(maxWidth: .infinity, minHeight: 145, alignment: .topLeading).padding(16).contentShape(Rectangle())
+                }.frame(maxWidth: .infinity, minHeight: 145, alignment: .topLeading).padding(16).contentShape(Rectangle())
             }.buttonStyle(.plain).frame(maxWidth: .infinity)
-                .background(LinearGradient(colors: [Color.sniffButter.opacity(0.88), Color.sniffPeach.opacity(0.72)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24))
-                .overlay { RoundedRectangle(cornerRadius: 24).stroke(Color.sniffMango.opacity(0.25)) }
-                .shadow(color: Color.sniffMango.opacity(0.12), radius: 12, y: 6)
+                .pawprintGlass(tint: .sniffMango, cornerRadius: 24)
 
             Button { showingBadges = true } label: {
                 VStack(alignment: .leading, spacing: 11) {
@@ -1765,7 +1955,8 @@ struct TodayView: View {
                             Circle().fill(LinearGradient(colors: [.sniffAqua, .sniffSky], startPoint: .topLeading, endPoint: .bottomTrailing))
                             Image(systemName: "rosette").font(.system(size: 20, weight: .semibold)).foregroundStyle(.white)
                             Image(systemName: "sparkle").font(.system(size: 8, weight: .bold)).foregroundStyle(Color.sniffButter).offset(x: 18, y: -17)
-                        }.frame(width: 42, height: 42).shadow(color: Color.sniffAqua.opacity(0.2), radius: 7, y: 4)
+                        }
+                        .frame(width: 42, height: 42).shadow(color: Color.sniffAqua.opacity(0.16), radius: 7, y: 4)
                         Spacer()
                         Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(Color.sniffAqua)
                     }
@@ -1774,12 +1965,9 @@ struct TodayView: View {
                         .font(.custom("AvenirNext-Medium", size: 13, relativeTo: .caption)).foregroundStyle(Color.sniffInk.opacity(0.72)).lineLimit(1)
                     ProgressView(value: badgeWidgetTrack.progress).tint(.sniffAqua)
                     Text(badgeProgress(badgeWidgetTrack)).font(.custom("AvenirNext-Medium", size: 12, relativeTo: .caption)).foregroundStyle(Color.sniffAqua)
-                }
-                .frame(maxWidth: .infinity, minHeight: 145, alignment: .topLeading).padding(16).contentShape(Rectangle())
+                }.frame(maxWidth: .infinity, minHeight: 145, alignment: .topLeading).padding(16).contentShape(Rectangle())
             }.buttonStyle(.plain).frame(maxWidth: .infinity)
-                .background(LinearGradient(colors: [Color.sniffLavender, Color.sniffSky.opacity(0.17)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24))
-                .overlay { RoundedRectangle(cornerRadius: 24).stroke(Color.sniffAqua.opacity(0.24)) }
-                .shadow(color: Color.sniffAqua.opacity(0.12), radius: 12, y: 6)
+                .pawprintGlass(tint: .sniffSky, cornerRadius: 24)
         }
     }
     private var progressDetail: some View {
@@ -1923,6 +2111,7 @@ struct TodayView: View {
     }
     private func badgeDescription(_ track: AchievementTrack) -> String {
         switch track.id {
+        case "personalized": "Complete \(pet.name)’s play preferences so every suggestion starts from a better fit."
         case "weekly-time": "Turn an ordinary week into a quality-time celebration with plenty of play together."
         case "good-days": "Build a joyful rhythm by coming back for playful moments on different days."
         case "adventures": "Try new mini adventures and grow your shared collection of happy play memories."
@@ -1934,6 +2123,7 @@ struct TodayView: View {
     }
     private func badgeShortDescription(_ track: AchievementTrack) -> String {
         switch track.id {
+        case "personalized": "Finish \(pet.name)’s play profile."
         case "weekly-time": "Share \(track.target) minutes of play in one week."
         case "good-days": "Play together on \(track.target) different days."
         case "adventures": "Complete \(track.target) playful adventures."
@@ -1945,6 +2135,7 @@ struct TodayView: View {
     }
     private func badgeRequirement(_ track: AchievementTrack) -> String {
         switch track.id {
+        case "personalized": "Complete the finishing touches"
         case "weekly-time", "lifetime-time": "Next goal: \(track.target) playful minutes"
         case "good-days": "Next goal: \(track.target) joyful days"
         case "explorer": "Next goal: \(track.target) play styles"
@@ -1954,6 +2145,7 @@ struct TodayView: View {
     }
     private func badgeProgress(_ track: AchievementTrack) -> String {
         switch track.id {
+        case "personalized": pet.profilePersonalizationComplete ? "Complete" : "0/1"
         case "weekly-time", "lifetime-time": "\(track.current)/\(track.target) min"
         case "good-days": "\(track.current)/\(track.target) days"
         case "explorer": "\(track.current)/\(track.target) styles"
@@ -2072,11 +2264,19 @@ struct TodayView: View {
         let additional = dueCareTasks.count - 1
         return additional > 0 ? "\(cadence) · +\(additional) more" : cadence
     }
-    private var badgeTracks: [AchievementTrack] { AchievementEngine.tracks(history: ActivityLibrary.history(for: pet, sessions: sessions)) }
-    private var badgeWidgetTrack: AchievementTrack { badgeTracks.first { $0.nextLevel != nil } ?? badgeTracks[0] }
-    private var playTaglines: [String] {
-        ["Make today pawsome", "Ready, set, wag!", "Let the good times purr", "Unleash a little fun", "A tiny adventure awaits", "Cue the happy zoomies"]
+    private var badgeTracks: [AchievementTrack] {
+        let personalized = AchievementTrack(
+            id: "personalized",
+            title: "Play profile",
+            symbol: "pawprint.fill",
+            earnedLevel: pet.profilePersonalizationComplete ? "All About \(pet.name)" : nil,
+            nextLevel: pet.profilePersonalizationComplete ? nil : "All About \(pet.name)",
+            current: pet.profilePersonalizationComplete ? 1 : 0,
+            target: 1
+        )
+        return [personalized] + AchievementEngine.tracks(history: ActivityLibrary.history(for: pet, sessions: sessions))
     }
+    private var badgeWidgetTrack: AchievementTrack { badgeTracks.first { $0.nextLevel != nil } ?? badgeTracks[0] }
     private var careBadge: String { petSessions.count >= 10 ? "Enrichment champion" : petSessions.count >= 3 ? "Thoughtful play partner" : petSessions.isEmpty ? "Ready for your first play" : "Great start" }
     private var engagementLabel: String {
         let recent = petEngagement.prefix(7)
@@ -2139,26 +2339,27 @@ struct PlayTimeSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.sniffPaper.ignoresSafeArea()
+                PetCareBackdrop()
                 ScrollView {
-                VStack(spacing: 22) {
-                    playHeader
-                    timeDial
-                    companionPicker
-                    dayPeriodCard
-                    moodPicker
-                    if intent == nil {
-                        Text("Choose one to see the best fits.").font(.subheadline.bold()).foregroundStyle(Color.sniffMuted).frame(maxWidth: .infinity)
-                    } else {
-                        recommendations
-                    }
-                    NavigationLink { LibraryView(pet: pet, onActivityComplete: { dismiss() }) } label: { Label("Browse play library", systemImage: "square.grid.2x2.fill").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 13).background(Color.sniffAqua.opacity(0.15), in: RoundedRectangle(cornerRadius: 22)) }.buttonStyle(.plain).foregroundStyle(Color.sniffAqua)
-                        .gentleFloat(x: 1, y: 2, rotation: 0.25, duration: 2.9)
-                    Spacer()
-                }.padding(22)
+                    VStack(spacing: 22) {
+                        playHeader
+                        timeDial
+                        companionPicker
+                        dayPeriodCard
+                        moodPicker
+                        if intent == nil {
+                            Text("Choose one to see the best fits.").font(.subheadline.bold()).foregroundStyle(Color.sniffMuted).frame(maxWidth: .infinity)
+                        } else {
+                            recommendations
+                        }
+                        NavigationLink { LibraryView(pet: pet, onActivityComplete: { dismiss() }) } label: {
+                            Label("Browse play library", systemImage: "square.grid.2x2.fill").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 13)
+                        }.buttonStyle(.plain).foregroundStyle(Color.sniffAqua).pawprintGlass(tint: .sniffAqua, cornerRadius: 22)
+                        Spacer()
+                    }.padding(22)
                 }
             }.toolbar(.hidden, for: .navigationBar)
-                .sheet(item: $previewActivity) { activity in ActivityPreviewSheet(activity: activity, pet: pet) { previewActivity = nil } }
+                .sheet(item: $previewActivity) { activity in ActivityPreviewSheet(activity: activity, pet: pet) }
                 .animation(.spring(response: 0.4, dampingFraction: 0.74), value: intent)
                 .animation(.spring(response: 0.35, dampingFraction: 0.8), value: availableMinutes)
         }
@@ -2184,11 +2385,9 @@ struct PlayTimeSheet: View {
             }
             ZStack {
                 ForEach(0..<28, id: \.self) { index in
-                    Capsule()
-                        .fill(index <= availableMinutes - 3 ? Color.sniffPurple : Color.sniffAqua.opacity(0.34))
+                    Capsule().fill(index <= availableMinutes - 3 ? Color.sniffPurple : Color.sniffAqua.opacity(0.34))
                         .frame(width: index % 5 == 2 ? 3 : 1.5, height: index % 5 == 2 ? 13 : 7)
-                        .offset(y: -97)
-                        .rotationEffect(.degrees(Double(index) / 28 * 360))
+                        .offset(y: -97).rotationEffect(.degrees(Double(index) / 28 * 360))
                 }
                 Circle().stroke(Color.sniffAqua.opacity(0.12), lineWidth: 15).frame(width: 174, height: 174)
                 Circle().trim(from: 0, to: max(fraction, 0.015)).stroke(
@@ -2199,40 +2398,24 @@ struct PlayTimeSheet: View {
                     ForEach(selectedPets) { PetAvatar(pet: $0, size: selectedPets.count > 1 ? 78 : 104, animated: false, showsAccessory: false) }
                 }
                 Text("\(availableMinutes) min")
-                    .font(.custom("AvenirNext-DemiBold", size: 16, relativeTo: .headline))
-                    .foregroundStyle(Color.sniffInk)
-                    .contentTransition(.numericText())
-                    .padding(.horizontal, 14).padding(.vertical, 6)
-                    .background(Color.sniffCard.opacity(0.94), in: Capsule())
-                    .overlay { Capsule().stroke(Color.sniffAqua.opacity(0.24)) }
-                    .shadow(color: Color.sniffInk.opacity(0.1), radius: 5, y: 2)
-                    .offset(y: 55)
-                Capsule().fill(Color.sniffAqua)
-                    .frame(width: 5, height: 19)
+                    .font(.custom("AvenirNext-DemiBold", size: 16, relativeTo: .headline)).foregroundStyle(Color.sniffInk)
+                    .contentTransition(.numericText()).padding(.horizontal, 14).padding(.vertical, 6)
+                    .background(.ultraThinMaterial, in: Capsule()).overlay { Capsule().stroke(Color.sniffAqua.opacity(0.24)) }
+                    .shadow(color: Color.sniffInk.opacity(0.08), radius: 5, y: 2).offset(y: 55)
+                Capsule().fill(Color.sniffAqua).frame(width: 5, height: 19)
                     .overlay { Capsule().stroke(.white.opacity(0.9), lineWidth: 1.5) }
-                    .shadow(color: Color.sniffAqua.opacity(0.3), radius: 4)
-                    .offset(y: -97)
-                    .rotationEffect(.degrees(fraction * 360))
+                    .shadow(color: Color.sniffAqua.opacity(0.3), radius: 4).offset(y: -97).rotationEffect(.degrees(fraction * 360))
             }
-            .frame(width: 208, height: 208)
-            .contentShape(Circle())
+            .frame(width: 208, height: 208).contentShape(Circle())
             .gesture(DragGesture(minimumDistance: 0).onChanged(updateTimeFromDial))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Time available")
-            .accessibilityValue("\(availableMinutes) minutes")
-            .accessibilityAdjustableAction { direction in
-                availableMinutes = min(30, max(3, availableMinutes + (direction == .increment ? 1 : -1)))
-            }
+            .accessibilityElement(children: .ignore).accessibilityLabel("Time available").accessibilityValue("\(availableMinutes) minutes")
+            .accessibilityAdjustableAction { direction in availableMinutes = min(30, max(3, availableMinutes + (direction == .increment ? 1 : -1))) }
             if availableMinutes == 30 {
                 Label("Switch activities for fresh fun", systemImage: "arrow.triangle.2.circlepath")
-                    .font(.caption.bold()).foregroundStyle(Color.sniffPurple)
-                    .padding(.horizontal, 12).padding(.vertical, 7)
-                    .background(Color.sniffLavender.opacity(0.9), in: Capsule())
-                    .transition(.scale(scale: 0.82).combined(with: .opacity))
+                    .font(.caption.bold()).foregroundStyle(Color.sniffPurple).padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(.ultraThinMaterial, in: Capsule()).transition(.scale(scale: 0.82).combined(with: .opacity))
             }
-        }.padding(18)
-            .background(LinearGradient(colors: [Color.sniffLavender.opacity(0.88), Color.sniffMint.opacity(0.28)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 30))
-            .overlay { RoundedRectangle(cornerRadius: 30).stroke(Color.sniffAqua.opacity(0.2)) }
+        }.padding(18).pawprintGlass(tint: .sniffAqua, cornerRadius: 30)
     }
     private var companionPicker: some View {
         Group {
@@ -2255,9 +2438,7 @@ struct PlayTimeSheet: View {
             Label("Time of day", systemImage: dayPeriod.symbol).font(.headline).symbolEffect(.bounce, value: dayPeriod)
             Spacer()
             Picker("Time of day", selection: $dayPeriod) { ForEach(DayPeriod.allCases) { Text($0.label).tag($0) } }.pickerStyle(.menu).tint(.sniffPurple)
-        }.padding(18)
-            .background(LinearGradient(colors: [Color.sniffButter.opacity(0.72), Color.sniffPeach.opacity(0.48)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
-            .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.sniffMango.opacity(0.18)) }
+        }.padding(18).pawprintGlass(tint: .sniffMango, cornerRadius: 28)
     }
     private var moodPicker: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -2275,8 +2456,13 @@ struct PlayTimeSheet: View {
                 Text(item.title(for: pet.species)).font(.custom("AvenirNext-Medium", size: 14, relativeTo: .subheadline)).lineLimit(1).minimumScaleFactor(0.8)
             }.frame(maxWidth: .infinity, minHeight: 72)
                 .foregroundStyle(selected ? .white : Color.sniffInk)
-                .background(intentColor(item).opacity(selected ? 1 : 0.16), in: RoundedRectangle(cornerRadius: 22))
-                .overlay { RoundedRectangle(cornerRadius: 22).stroke(intentColor(item).opacity(selected ? 0 : 0.2)) }
+                .background {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 22).fill(.ultraThinMaterial)
+                        RoundedRectangle(cornerRadius: 22).fill(intentColor(item).opacity(selected ? 0.9 : 0.12))
+                    }
+                }
+                .overlay { RoundedRectangle(cornerRadius: 22).stroke(.white.opacity(selected ? 0.34 : 0.5), lineWidth: 1) }
                 .scaleEffect(selected ? 1.025 : 1)
         }.buttonStyle(.plain).sensoryFeedback(.selection, trigger: selected)
     }
@@ -2290,11 +2476,9 @@ struct PlayTimeSheet: View {
             }.font(.system(size: 9, weight: .bold)).foregroundStyle(Color.sniffMuted).minimumScaleFactor(0.65)
             if let intent {
                 Label(intent.guidance(for: pet.species), systemImage: intent == .resting ? "moon.zzz.fill" : "heart.text.clipboard.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.sniffInk)
-                    .padding(13)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.sniffButter.opacity(0.72), in: RoundedRectangle(cornerRadius: 18))
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(Color.sniffInk)
+                    .padding(13).frame(maxWidth: .infinity, alignment: .leading)
+                    .pawprintGlass(tint: .sniffButter, cornerRadius: 18)
             }
             ForEach(suggestions) { suggestion in
                 Button { previewActivity = suggestion } label: {
@@ -2303,16 +2487,13 @@ struct PlayTimeSheet: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(suggestion.displayTitle).font(.headline).foregroundStyle(Color.sniffInk).lineLimit(2)
                             Text("\(suggestion.durationMinutes) min · \(suggestion.category.funLabel)").font(.caption.bold()).foregroundStyle(Color.sniffMuted)
-                            if let safetyNote = suggestion.safetyNotes.first {
-                                Text(safetyNote).font(.caption).foregroundStyle(Color.sniffInk.opacity(0.76)).lineLimit(2)
-                            }
+                            if let safetyNote = suggestion.safetyNotes.first { Text(safetyNote).font(.caption).foregroundStyle(Color.sniffInk.opacity(0.76)).lineLimit(2) }
                         }
                         Spacer()
                         Image(systemName: "info.circle.fill").font(.title2).foregroundStyle(Color.sniffAqua)
                     }.padding(11)
-                        .background(LinearGradient(colors: [Color.sniffCard, suggestion.category.accent.opacity(0.17), Color.sniffLavender.opacity(0.38)], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 24))
-                        .overlay { RoundedRectangle(cornerRadius: 24).stroke(suggestion.category.accent.opacity(0.16)) }
                 }.buttonStyle(.plain).accessibilityHint("Shows activity details before starting")
+                    .pawprintGlass(tint: suggestion.category.accent, cornerRadius: 24)
             }
         }
     }
@@ -2326,13 +2507,9 @@ struct PlayTimeSheet: View {
         var radians = atan2(dx, -dy)
         if radians < 0 { radians += .pi * 2 }
         let proposed = min(30, max(3, 3 + Int((radians / (.pi * 2) * 27).rounded())))
-        if availableMinutes >= 27 && proposed <= 6 {
-            availableMinutes = 30
-        } else if availableMinutes <= 6 && proposed >= 27 {
-            availableMinutes = 3
-        } else {
-            availableMinutes = proposed
-        }
+        if availableMinutes >= 27 && proposed <= 6 { availableMinutes = 30 }
+        else if availableMinutes <= 6 && proposed >= 27 { availableMinutes = 3 }
+        else { availableMinutes = proposed }
     }
     private func remember(_ newIntent: PlayIntent) {
         intent = newIntent
@@ -2358,21 +2535,87 @@ struct PlayTimeSheet: View {
 
 struct ActivityPreviewSheet: View {
     @Environment(\.dismiss) private var dismiss
-    let activity: Activity; let pet: PetProfile; let onStart: () -> Void
+    let activity: Activity
+    let pet: PetProfile
+
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    ActivityArtwork(activity: activity, pet: pet).frame(height: 190).clipShape(RoundedRectangle(cornerRadius: 28))
-                    Text(activity.displayTitle).font(.largeTitle.bold())
-                    HStack { Label("\(activity.durationMinutes) min", systemImage: "clock.fill"); Text(activity.category.funLabel).badge(color: activity.category.accent) }.font(.subheadline.bold())
-                    Text(activity.description).font(.title3)
-                    InfoBlock(title: "What you’ll do", color: activity.category.softColor) { ForEach(Array(activity.steps.enumerated()), id: \.offset) { i, step in Text("\(i + 1). \(step)") } }
-                    if let safety = activity.safetyNotes.first { Label(safety, systemImage: "heart.text.clipboard.fill").font(.subheadline).foregroundStyle(.secondary) }
-                    NavigationLink { ActivityDetailView(activity: activity, pet: pet) } label: { Label("Start activity", systemImage: "play.fill").frame(maxWidth: .infinity) }.buttonStyle(PrimaryButtonStyle()).simultaneousGesture(TapGesture().onEnded(onStart))
-                }.padding(22)
-            }.background(Color.sniffPaper).toolbar { ToolbarItem(placement: .topBarTrailing) { Button { dismiss() } label: { Image(systemName: "xmark") } } }
+            ZStack {
+                PetCareBackdrop(accent: activity.category.accent)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        activityHeader
+                        stepsCard
+                        if let safety = activity.safetyNotes.first {
+                            Label(safety, systemImage: "heart.fill")
+                                .font(.caption).foregroundStyle(Color.sniffMuted)
+                                .padding(.horizontal, 4)
+                        }
+                    }.padding(18)
+                }.scrollIndicators(.hidden)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark").font(.subheadline.bold())
+                            .frame(width: 36, height: 36).background(.ultraThinMaterial, in: Circle())
+                    }.buttonStyle(.plain).foregroundStyle(Color.sniffInk)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                NavigationLink { ActivityDetailView(activity: activity, pet: pet) } label: {
+                    Text("Start").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.horizontal, 18).padding(.vertical, 10)
+                .background(.ultraThinMaterial)
+            }
         }
+    }
+
+    private var activityHeader: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(activity.category.funLabel.uppercased())
+                .font(.caption.bold()).tracking(1.2).foregroundStyle(activity.category.accent)
+            Text(activity.displayTitle)
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .fixedSize(horizontal: false, vertical: true)
+            Text(activity.description)
+                .font(.body).foregroundStyle(Color.sniffInk.opacity(0.72))
+            HStack(spacing: 8) {
+                previewChip("\(activity.durationMinutes) min", icon: "clock.fill")
+                if !activity.materials.isEmpty {
+                    previewChip(activity.materials.count == 1 ? activity.materials[0].label : "\(activity.materials.count) items", icon: "shippingbox.fill")
+                }
+            }
+        }
+        .padding(18)
+        .pawprintGlass(tint: activity.category.accent, cornerRadius: 26)
+    }
+
+    private var stepsCard: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            Text("How to play").font(.title3.bold())
+            ForEach(Array(activity.steps.enumerated()), id: \.offset) { index, step in
+                HStack(alignment: .top, spacing: 12) {
+                    Text("\(index + 1)")
+                        .font(.caption.bold()).foregroundStyle(.white)
+                        .frame(width: 26, height: 26).background(activity.category.accent, in: Circle())
+                    Text(step).font(.body).foregroundStyle(Color.sniffInk)
+                    Spacer(minLength: 0)
+                }
+                if index < activity.steps.count - 1 { Divider().padding(.leading, 38) }
+            }
+        }
+        .padding(18)
+        .pawprintGlass(tint: activity.category.accent.opacity(0.65), cornerRadius: 26)
+    }
+
+    private func previewChip(_ title: String, icon: String) -> some View {
+        Label(title, systemImage: icon)
+            .font(.caption.bold()).foregroundStyle(Color.sniffInk.opacity(0.72))
+            .padding(.horizontal, 10).padding(.vertical, 7)
+            .background(.ultraThinMaterial, in: Capsule())
     }
 }
 
@@ -2495,8 +2738,11 @@ struct ActivityCard: View {
                         .clipShape(RoundedRectangle(cornerRadius: 18))
                 }
                 .overlay(alignment: .bottomTrailing) {
-                    Image(systemName: icon).font(.title2.bold()).foregroundStyle(.white).padding(12)
-                        .background(activity.category.accent, in: Circle()).padding(10)
+                    ZStack {
+                        Circle().fill(.ultraThinMaterial)
+                        Circle().fill(activity.category.accent.opacity(0.66))
+                        Image(systemName: icon).font(.title2.bold()).foregroundStyle(.white)
+                    }.frame(width: 48, height: 48).padding(10)
                 }
             HStack {
                 Label("\(activity.durationMinutes) min", systemImage: "clock.fill").font(.caption.bold())
@@ -2506,20 +2752,49 @@ struct ActivityCard: View {
             Text(activity.displayTitle).font(.system(.title, design: .default, weight: .bold))
             Label(activity.materials.isEmpty ? "No materials needed" : activity.materials.map(\.label).joined(separator: " · "), systemImage: "shippingbox.fill")
                 .font(.caption.weight(.semibold)).foregroundStyle(Color.sniffMuted).lineLimit(2)
-            Label("Tap to start", systemImage: "play.fill").font(.subheadline.bold()).foregroundStyle(activity.category.accent)
-        }.padding().background(activity.category.softColor, in: RoundedRectangle(cornerRadius: 26)).overlay { RoundedRectangle(cornerRadius: 26).stroke(activity.category.accent.opacity(0.32), lineWidth: 1.5) }.shadow(color: activity.category.accent.opacity(0.18), radius: 18, y: 9)
+            Label("Double-tap for a quick look", systemImage: "rectangle.on.rectangle.angled").font(.caption.bold()).foregroundStyle(activity.category.accent)
+        }.padding().pawprintGlass(tint: activity.category.accent, cornerRadius: 26)
     }
     private var icon: String { switch activity.category { case .foraging: "nose"; case .sensory: "wind"; case .cognitive: "puzzlepiece.fill"; case .physical: "figure.run"; case .social: "heart.fill"; case .calming: "moon.stars.fill" } }
 }
 
 struct ActivityFlipCard: View {
     let activity: Activity; let pet: PetProfile
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var flipped = false
     var body: some View {
-        NavigationLink { ActivityDetailView(activity: activity, pet: pet) } label: {
+        ZStack {
             ActivityCard(activity: activity)
+                .opacity(flipped ? 0 : 1)
+                .rotation3DEffect(.degrees(flipped && !reduceMotion ? 90 : 0), axis: (x: 0, y: 1, z: 0), perspective: 0.7)
+            VStack(alignment: .leading, spacing: 14) {
+                Text("QUICK LOOK").font(.caption.bold()).tracking(1.1).foregroundStyle(activity.category.accent)
+                Text(activity.displayTitle).font(.title2.bold())
+                Text(activity.description).font(.body).foregroundStyle(Color.sniffMuted)
+                Divider()
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach(Array(activity.steps.prefix(3).enumerated()), id: \.offset) { index, step in
+                        Text("\(index + 1). \(step)").font(.subheadline.weight(.semibold)).lineLimit(2)
+                    }
+                }
+                Text("Double-tap to see the card again").font(.caption).foregroundStyle(Color.sniffMuted)
+            }
+            .frame(maxWidth: .infinity, minHeight: 300, alignment: .topLeading)
+            .padding(20).pawprintGlass(tint: activity.category.accent, cornerRadius: 26)
+            .opacity(flipped ? 1 : 0)
+            .rotation3DEffect(.degrees(flipped || reduceMotion ? 0 : -90), axis: (x: 0, y: 1, z: 0), perspective: 0.7)
         }
-        .buttonStyle(.plain)
-        .accessibilityHint("Opens the guided activity")
+        .contentShape(RoundedRectangle(cornerRadius: 26))
+        .onTapGesture(count: 2) {
+            withAnimation(reduceMotion ? nil : .spring(response: 0.46, dampingFraction: 0.8)) { flipped.toggle() }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            NavigationLink { ActivityDetailView(activity: activity, pet: pet) } label: {
+                Label("Open", systemImage: "arrow.right").font(.caption.bold()).foregroundStyle(.white)
+                    .padding(.horizontal, 13).padding(.vertical, 9).background(activity.category.accent, in: Capsule())
+            }.buttonStyle(.plain).padding(16)
+        }
+        .accessibilityHint("Double-tap the card for a quick description, or choose Open for the guided activity")
     }
 }
 
@@ -2557,15 +2832,13 @@ struct FetchView: View {
                                 Image(systemName: "pawprint.fill").font(.system(size: 38, weight: .bold)).foregroundStyle(Color.sniffPurple)
                                 Text("What would help right now?").font(.system(.title2, design: .default, weight: .bold))
                                 Text("Ask for an easier version, a quick idea, or something using what’s nearby.").foregroundStyle(Color.sniffMuted).multilineTextAlignment(.center)
-                            }.frame(maxWidth: .infinity).padding(24).background(Color.sniffCard.opacity(0.9), in: RoundedRectangle(cornerRadius: 28)).shadow(color: Color.sniffPurple.opacity(0.1), radius: 16, y: 7)
+                            }.frame(maxWidth: .infinity).padding(24).pawprintGlass(tint: .sniffPurple, cornerRadius: 28)
                         } else if let answer {
                             HStack(alignment: .top, spacing: 12) {
                                 FetchSpark(size: 38)
                                 Text(answer).font(.system(.body, design: .default, weight: .medium)).lineSpacing(5).frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .padding(20).background(Color.sniffCard.opacity(0.94), in: RoundedRectangle(cornerRadius: 26))
-                            .overlay { RoundedRectangle(cornerRadius: 26).stroke(Color.sniffPurple.opacity(0.16)) }
-                            .shadow(color: Color.sniffPurple.opacity(0.1), radius: 14, y: 6).id("answer")
+                            .padding(20).pawprintGlass(tint: .sniffPurple, cornerRadius: 26).id("answer")
                         }
 
                         Menu {
@@ -2575,7 +2848,7 @@ struct FetchView: View {
                         } label: {
                             Label("Try a quick prompt", systemImage: "sparkles")
                                 .font(.subheadline.bold()).padding(.horizontal, 16).padding(.vertical, 11)
-                                .background(Color.sniffLavender, in: Capsule()).foregroundStyle(Color.sniffPurple)
+                                .background(.ultraThinMaterial, in: Capsule()).foregroundStyle(Color.sniffPurple)
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
 
@@ -2601,9 +2874,8 @@ struct FetchView: View {
                                 .accessibilityIdentifier("fetch.send")
                             }
                             .frame(minHeight: 58)
-                            .background(Color.sniffCard, in: RoundedRectangle(cornerRadius: 24))
+                            .pawprintGlass(tint: .sniffPurple, cornerRadius: 24)
                             .overlay { RoundedRectangle(cornerRadius: 24).stroke(focused ? Color.sniffPurple : Color.sniffLine, lineWidth: focused ? 2 : 1) }
-                            .shadow(color: Color.sniffPurple.opacity(focused ? 0.14 : 0.08), radius: 16, y: 7)
                             Text("Fetch understands activities, constraints, profile questions, and pet-name requests—all on this device.")
                                 .font(.caption2)
                                 .foregroundStyle(Color.sniffMuted)
@@ -2665,7 +2937,7 @@ struct CareView: View {
                         Label("This week", systemImage: "checkmark.seal.fill").font(.headline).foregroundStyle(Color.sniffMint)
                         Text(weeklyCompletions.isEmpty ? "Ready when you are." : "\(weeklyCompletions.count) care \(weeklyCompletions.count == 1 ? "item" : "items") completed.")
                             .foregroundStyle(Color.sniffMuted)
-                    }.padding(18).frame(maxWidth: .infinity, alignment: .leading).background(Color.sniffButter.opacity(0.75), in: RoundedRectangle(cornerRadius: 24))
+                    }.padding(18).frame(maxWidth: .infinity, alignment: .leading).pawprintGlass(tint: .sniffMint, cornerRadius: 24)
 
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
@@ -2685,7 +2957,7 @@ struct CareView: View {
                                 }
                             Divider().opacity(0.55)
                         }
-                    }.padding(20).background(Color.sniffCard.opacity(0.94), in: RoundedRectangle(cornerRadius: 28)).overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.sniffGold.opacity(0.2)) }.shadow(color: Color.sniffGold.opacity(0.11), radius: 15, y: 7)
+                    }.padding(20).pawprintGlass(tint: .sniffGold, cornerRadius: 28)
                     Button { addingCare = true } label: { Label("Add care item", systemImage: "plus.circle.fill") }.buttonStyle(PrimaryButtonStyle())
                     if !weeklyCompletions.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
@@ -2698,7 +2970,7 @@ struct CareView: View {
                                         .font(.caption).foregroundStyle(Color.sniffMuted)
                                 }
                             }
-                        }.padding(18).background(Color.sniffCard.opacity(0.92), in: RoundedRectangle(cornerRadius: 24))
+                        }.padding(18).pawprintGlass(tint: .sniffGold, cornerRadius: 24)
                     }
                     Label("For pain, severe matting, or sudden sensitivity, contact a veterinarian or professional groomer.", systemImage: "heart.text.square.fill")
                         .font(.caption).foregroundStyle(Color.sniffMuted).padding(.horizontal, 4)
@@ -3461,6 +3733,34 @@ struct PrimaryButtonStyle: ButtonStyle {
     }
 }
 
+private struct PawprintGlassSurfaceModifier: ViewModifier {
+    let tint: Color
+    let cornerRadius: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                ZStack {
+                    RoundedRectangle(cornerRadius: cornerRadius).fill(.ultraThinMaterial)
+                    RoundedRectangle(cornerRadius: cornerRadius).fill(
+                        LinearGradient(
+                            colors: [tint.opacity(0.18), Color.white.opacity(0.05), Color.sniffCard.opacity(0.16)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius).stroke(
+                    LinearGradient(colors: [.white.opacity(0.64), tint.opacity(0.22), .white.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: 1
+                )
+            }
+            .shadow(color: tint.opacity(0.11), radius: 15, y: 8)
+    }
+}
+
 private struct GentleFloatModifier: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let x: CGFloat
@@ -3480,6 +3780,10 @@ private struct GentleFloatModifier: ViewModifier {
 }
 
 private extension View {
+    func pawprintGlass(tint: Color = .sniffAqua, cornerRadius: CGFloat = 24) -> some View {
+        modifier(PawprintGlassSurfaceModifier(tint: tint, cornerRadius: cornerRadius))
+    }
+
     func gentleFloat(x: CGFloat = 0, y: CGFloat = 2, rotation: Double = 0, duration: Double = 2.4) -> some View {
         modifier(GentleFloatModifier(x: x, y: y, rotation: rotation, duration: duration))
     }
@@ -3730,22 +4034,22 @@ struct PetPairPhotos: View {
     }
 }
 struct PetCareBackdrop: View {
+    var accent: Color = .sniffAqua
+    var warmth: Color = .sniffPeach
     var body: some View {
         ZStack {
             Color.sniffPaper
             LinearGradient(
                 colors: [
-                    Color.sniffSky.opacity(0.14),
-                    Color.sniffLavender.opacity(0.78),
-                    Color.sniffSurface.opacity(0.92),
-                    Color.sniffButter.opacity(0.24),
-                    Color.sniffPeach.opacity(0.5)
+                    accent.opacity(0.18),
+                    Color.sniffSurface.opacity(0.9),
+                    warmth.opacity(0.34)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            Circle().fill(Color.sniffAqua.opacity(0.11)).frame(width: 320, height: 320).blur(radius: 42).offset(x: 180, y: -310)
-            Circle().fill(Color.sniffBerry.opacity(0.06)).frame(width: 310, height: 310).blur(radius: 58).offset(x: -180, y: 330)
+            Circle().fill(accent.opacity(0.12)).frame(width: 340, height: 340).blur(radius: 64).offset(x: 190, y: -310)
+            Circle().fill(warmth.opacity(0.2)).frame(width: 320, height: 320).blur(radius: 72).offset(x: -180, y: 360)
         }.ignoresSafeArea().accessibilityHidden(true)
     }
 }
