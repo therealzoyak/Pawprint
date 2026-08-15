@@ -1,6 +1,6 @@
 # Pawprint Phase 1 Testing
 
-Use the `Sniff` scheme on an iPhone simulator running iOS 17 or newer.
+Use the `Pawprint` scheme on an iPhone simulator running iOS 17 or newer.
 
 ## Clean test sessions
 

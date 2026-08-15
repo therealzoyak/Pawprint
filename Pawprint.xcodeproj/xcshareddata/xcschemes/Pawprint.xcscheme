@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "E00100000000000000000001"
-               BuildableName = "Sniff.app"
-               BlueprintName = "Sniff"
-               ReferencedContainer = "container:Sniff.xcodeproj">
+               BuildableName = "Pawprint.app"
+               BlueprintName = "Pawprint"
+               ReferencedContainer = "container:Pawprint.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -29,9 +29,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "E00100000000000000000002"
-               BuildableName = "SniffTests.xctest"
-               BlueprintName = "SniffTests"
-               ReferencedContainer = "container:Sniff.xcodeproj">
+               BuildableName = "PawprintTests.xctest"
+               BlueprintName = "PawprintTests"
+               ReferencedContainer = "container:Pawprint.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,9 +47,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "E00100000000000000000002"
-               BuildableName = "SniffTests.xctest"
-               BlueprintName = "SniffTests"
-               ReferencedContainer = "container:Sniff.xcodeproj">
+               BuildableName = "PawprintTests.xctest"
+               BlueprintName = "PawprintTests"
+               ReferencedContainer = "container:Pawprint.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -69,9 +69,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E00100000000000000000001"
-            BuildableName = "Sniff.app"
-            BlueprintName = "Sniff"
-            ReferencedContainer = "container:Sniff.xcodeproj">
+            BuildableName = "Pawprint.app"
+            BlueprintName = "Pawprint"
+            ReferencedContainer = "container:Pawprint.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -86,9 +86,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E00100000000000000000001"
-            BuildableName = "Sniff.app"
-            BlueprintName = "Sniff"
-            ReferencedContainer = "container:Sniff.xcodeproj">
+            BuildableName = "Pawprint.app"
+            BlueprintName = "Pawprint"
+            ReferencedContainer = "container:Pawprint.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

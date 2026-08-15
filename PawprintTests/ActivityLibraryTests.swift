@@ -1,6 +1,6 @@
 import XCTest
 import SwiftData
-@testable import Sniff
+@testable import Pawprint
 
 @MainActor
 final class ActivityLibraryTests: XCTestCase {

@@ -1,8 +1,8 @@
 {
-  "name": "Sniff",
-  "short_name": "Sniff",
+  "name": "Pawprint",
+  "short_name": "Pawprint",
   "description": "One tiny enrichment activity a day for your dog or cat.",
-  "start_url": "./sniff-prototype.html",
+  "start_url": "./pawprint-prototype.html",
   "display": "standalone",
   "background_color": "#F5F9FF",
   "theme_color": "#1768AC"

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A00100000000000000000001 /* SniffApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00100000000000000000001 /* SniffApp.swift */; };
+		A00100000000000000000001 /* PawprintApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00100000000000000000001 /* PawprintApp.swift */; };
 		A00100000000000000000002 /* Domain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00100000000000000000002 /* Domain.swift */; };
 		A00100000000000000000003 /* ActivityLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00100000000000000000003 /* ActivityLibrary.swift */; };
 		A00100000000000000000004 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00100000000000000000004 /* RootView.swift */; };
@@ -25,20 +25,20 @@
 			containerPortal = D00100000000000000000001 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = E00100000000000000000001;
-			remoteInfo = Sniff;
+			remoteInfo = Pawprint;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		B00100000000000000000001 /* SniffApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SniffApp.swift; sourceTree = "<group>"; };
+		B00100000000000000000001 /* PawprintApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PawprintApp.swift; sourceTree = "<group>"; };
 		B00100000000000000000002 /* Domain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain.swift; sourceTree = "<group>"; };
 		B00100000000000000000003 /* ActivityLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLibrary.swift; sourceTree = "<group>"; };
 		B00100000000000000000004 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		B00100000000000000000005 /* activities.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = activities.json; sourceTree = "<group>"; };
 		B00100000000000000000006 /* ActivityLibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLibraryTests.swift; sourceTree = "<group>"; };
 		B00100000000000000000007 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
-		B00100000000000000000008 /* Sniff.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sniff.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B00100000000000000000009 /* SniffTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SniffTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B00100000000000000000008 /* Pawprint.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pawprint.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B00100000000000000000009 /* PawprintTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PawprintTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00100000000000000000010 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B00100000000000000000011 /* FetchAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchAssistant.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -65,14 +65,14 @@
 		D00100000000000000000002 = {
 			isa = PBXGroup;
 			children = (
-				D00100000000000000000003 /* Sniff */,
-				D00100000000000000000008 /* SniffTests */,
+				D00100000000000000000003 /* Pawprint */,
+				D00100000000000000000008 /* PawprintTests */,
 				D00100000000000000000009,
 				D00100000000000000000010 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		D00100000000000000000003 /* Sniff */ = {
+		D00100000000000000000003 /* Pawprint */ = {
 			isa = PBXGroup;
 			children = (
 				B00100000000000000000010 /* Assets.xcassets */,
@@ -82,13 +82,13 @@
 				D00100000000000000000007 /* Views */,
 				D00100000000000000000011 /* Resources */,
 			);
-			path = Sniff;
+			path = Pawprint;
 			sourceTree = "<group>";
 		};
 		D00100000000000000000004 /* App */ = {
 			isa = PBXGroup;
 			children = (
-				B00100000000000000000001 /* SniffApp.swift */,
+				B00100000000000000000001 /* PawprintApp.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -118,12 +118,12 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		D00100000000000000000008 /* SniffTests */ = {
+		D00100000000000000000008 /* PawprintTests */ = {
 			isa = PBXGroup;
 			children = (
 				B00100000000000000000006 /* ActivityLibraryTests.swift */,
 			);
-			path = SniffTests;
+			path = PawprintTests;
 			sourceTree = "<group>";
 		};
 		D00100000000000000000009 = {
@@ -136,8 +136,8 @@
 		D00100000000000000000010 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B00100000000000000000008 /* Sniff.app */,
-				B00100000000000000000009 /* SniffTests.xctest */,
+				B00100000000000000000008 /* Pawprint.app */,
+				B00100000000000000000009 /* PawprintTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -153,9 +153,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		E00100000000000000000001 /* Sniff */ = {
+		E00100000000000000000001 /* Pawprint */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C00100000000000000000002 /* Build configuration list for PBXNativeTarget "Sniff" */;
+			buildConfigurationList = C00100000000000000000002 /* Build configuration list for PBXNativeTarget "Pawprint" */;
 			buildPhases = (
 				F00100000000000000000003 /* Sources */,
 				F00100000000000000000001 /* Frameworks */,
@@ -165,14 +165,14 @@
 			);
 			dependencies = (
 			);
-			name = Sniff;
-			productName = Sniff;
-			productReference = B00100000000000000000008 /* Sniff.app */;
+			name = Pawprint;
+			productName = Pawprint;
+			productReference = B00100000000000000000008 /* Pawprint.app */;
 			productType = "com.apple.product-type.application";
 		};
-		E00100000000000000000002 /* SniffTests */ = {
+		E00100000000000000000002 /* PawprintTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C00100000000000000000003 /* Build configuration list for PBXNativeTarget "SniffTests" */;
+			buildConfigurationList = C00100000000000000000003 /* Build configuration list for PBXNativeTarget "PawprintTests" */;
 			buildPhases = (
 				F00100000000000000000004 /* Sources */,
 				F00100000000000000000002 /* Frameworks */,
@@ -183,9 +183,9 @@
 			dependencies = (
 				T00100000000000000000001 /* PBXTargetDependency */,
 			);
-			name = SniffTests;
-			productName = SniffTests;
-			productReference = B00100000000000000000009 /* SniffTests.xctest */;
+			name = PawprintTests;
+			productName = PawprintTests;
+			productReference = B00100000000000000000009 /* PawprintTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -207,7 +207,7 @@
 					};
 				};
 			};
-			buildConfigurationList = C00100000000000000000001 /* Build configuration list for PBXProject "Sniff" */;
+			buildConfigurationList = C00100000000000000000001 /* Build configuration list for PBXProject "Pawprint" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -222,8 +222,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				E00100000000000000000001 /* Sniff */,
-				E00100000000000000000002 /* SniffTests */,
+				E00100000000000000000001 /* Pawprint */,
+				E00100000000000000000002 /* PawprintTests */,
 			);
 		};
 /* End PBXProject section */
@@ -253,7 +253,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A00100000000000000000001 /* SniffApp.swift in Sources */,
+				A00100000000000000000001 /* PawprintApp.swift in Sources */,
 				A00100000000000000000002 /* Domain.swift in Sources */,
 				A00100000000000000000003 /* ActivityLibrary.swift in Sources */,
 				A00100000000000000000010 /* FetchAssistant.swift in Sources */,
@@ -274,7 +274,7 @@
 /* Begin PBXTargetDependency section */
 		T00100000000000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = E00100000000000000000001 /* Sniff */;
+			target = E00100000000000000000001 /* Pawprint */;
 			targetProxy = P00100000000000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -321,7 +321,7 @@
 				ENABLE_TESTABILITY = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Sniff/Info.plist;
+				INFOPLIST_FILE = Pawprint/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Pawprint;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Add an optional photo to your Pawprint memory.";
@@ -348,7 +348,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Sniff/Info.plist;
+				INFOPLIST_FILE = Pawprint/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Pawprint;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Add an optional photo to your Pawprint memory.";
@@ -373,12 +373,12 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sniff.local.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pawprint.local.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Sniff.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Sniff";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pawprint.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pawprint";
 			};
 			name = Debug;
 		};
@@ -389,18 +389,18 @@
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sniff.local.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pawprint.local.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Sniff.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Sniff";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pawprint.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pawprint";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		C00100000000000000000001 /* Build configuration list for PBXProject "Sniff" */ = {
+		C00100000000000000000001 /* Build configuration list for PBXProject "Pawprint" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B10000000000000000000001 /* Debug */,
@@ -409,7 +409,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C00100000000000000000002 /* Build configuration list for PBXNativeTarget "Sniff" */ = {
+		C00100000000000000000002 /* Build configuration list for PBXNativeTarget "Pawprint" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B10000000000000000000003 /* Debug */,
@@ -418,7 +418,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C00100000000000000000003 /* Build configuration list for PBXNativeTarget "SniffTests" */ = {
+		C00100000000000000000003 /* Build configuration list for PBXNativeTarget "PawprintTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B10000000000000000000005 /* Debug */,

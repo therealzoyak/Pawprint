@@ -1,49 +1,127 @@
-# Pawprint
+<div align="center">
+  <img src="Pawprint/Assets.xcassets/AppIcon.appiconset/Pawprint-AppIcon.png" width="128" alt="Pawprint app icon">
+  <h1>Pawprint</h1>
+  <p><strong>Small moments. Happier pets.</strong></p>
+  <p>A local-first iOS companion that turns a pet's needs, energy, and preferences into one realistic enrichment idea at a time.</p>
 
-Pawprint (originally developed under the working name Sniff) includes two local implementations, kept side by side:
+  <p>
+    <img alt="Swift 5" src="https://img.shields.io/badge/Swift-5-F05138?logo=swift&logoColor=white">
+    <img alt="SwiftUI" src="https://img.shields.io/badge/UI-SwiftUI-0A84FF?logo=apple&logoColor=white">
+    <img alt="iOS 17+" src="https://img.shields.io/badge/iOS-17%2B-111111?logo=apple&logoColor=white">
+    <img alt="Local first" src="https://img.shields.io/badge/data-local--first-1E8E7E">
+  </p>
+</div>
 
-- `Sniff.xcodeproj`: the native iOS 17+ SwiftUI milestone 0/1 application
-- `index.html` and `sniff-prototype.html`: the original dependency-free web MVP and design prototype
+<p align="center">
+  <img src="docs/screenshots/pawprint-home.png" width="320" alt="Pawprint home screen with a personalized activity prompt">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/pawprint-progress.png" width="320" alt="Pawprint weekly play progress and pet profile">
+</p>
 
-## Native iOS app
+## The idea
 
-Open `Sniff.xcodeproj` in Xcode 16 or newer, select an iOS 17+ simulator, and run the `Sniff` scheme. The app uses SwiftData locally and has no network, account, payment, or backend dependency.
+Pet enrichment advice is abundant; knowing what is safe, realistic, and right for *this pet today* is harder. Pawprint narrows that decision to a small activity an owner can actually do, explains why it fits, and learns from the pet's response.
 
-The native slice includes dog/cat onboarding, multi-pet switching, a typed reviewed seed catalog, hard safety and materials filtering, explainable preference-aware daily recommendations, full instructions, four completion reactions, optional photo selection, favorites, a filterable safe library, a cumulative memory scrapbook with pet-centered observed preferences, and Fetch, a local pet-aware helper. Fetch recognizes different kinds of requests—including activity constraints, pet-name ideas, greetings, and profile questions—without a network connection or per-request cost. Unit tests cover catalog decoding, safety filtering, reaction effects, rotation, recent avoidance, calming bias, swap state, pet isolation, filters, and safe recommendation output.
+The product is intentionally gentle: no guilt loops and no pressure to maintain a perfect streak. A useful three-minute interaction still counts.
 
-Run tests from Xcode or with:
+## What the native app does
 
-```sh
-xcodebuild test -project Sniff.xcodeproj -scheme Sniff -destination 'platform=iOS Simulator,name=iPhone 16'
+- **Builds a useful pet profile** through dog/cat onboarding, including age, size, energy, routine, constraints, and available materials.
+- **Chooses a daily activity** from a typed, reviewed catalog using hard safety filters before preference scoring.
+- **Explains the match** with materials, timing, step-by-step instructions, and a pet-specific reason.
+- **Learns from play** through completion reactions, recent-history avoidance, favorites, swaps, and observed preferences.
+- **Keeps pets separate** with multi-pet switching and isolated recommendation history.
+- **Turns activity into memory** with optional photos and a cumulative scrapbook.
+- **Answers locally with Fetch**, a pet-aware helper for activity constraints, profile questions, greetings, and name ideas—without sending a prompt to a server.
+- **Tracks care alongside play** with household members, care tasks, notes, and completion history.
+
+## How a recommendation is made
+
+```text
+pet profile + today's context + available materials
+                         ↓
+            hard safety eligibility checks
+                         ↓
+       preference, reaction, and recency scoring
+                         ↓
+       one explainable activity + safe alternates
 ```
 
-## Web MVP
+Safety is a gate, not a ranking signal. An activity must be eligible for the pet before personalization can make it more likely to appear.
 
-Sniff gives a pet owner one short, suitable enrichment activity each day. This dependency-free web MVP is based on the accompanying product brief and design prototype.
+## Privacy by design
 
-## Run it
+Pawprint currently has no account, analytics SDK, ad network, payment dependency, or remote backend. Profiles, activity history, favorites, care data, and memories are stored on-device with SwiftData. The app can run without a network connection or per-request AI cost.
 
-Start a local static-file server in this directory:
+Photos are optional. Pawprint's guidance is for enrichment and routine support, not veterinary diagnosis or treatment.
+
+## Technical notes
+
+| Area | Implementation |
+| --- | --- |
+| Interface | SwiftUI, responsive iPhone layouts, custom visual system |
+| Persistence | SwiftData models with a recoverable in-memory fallback |
+| Recommendation engine | Deterministic safety filtering, preference weighting, reaction learning, and recent-item avoidance |
+| Content | Bundled JSON activity catalog with materials, instructions, categories, and safety notes |
+| Local assistant | Intent routing and pet-aware response composition in Swift |
+| Minimum platform | iOS 17 |
+| Dependencies | Apple frameworks only |
+
+## Run the iOS app
+
+1. Open `Pawprint.xcodeproj` in Xcode 16 or newer.
+2. Select the `Pawprint` scheme.
+3. Choose an iPhone simulator running iOS 17 or newer.
+4. Build and run.
+
+To start every launch with a fresh in-memory profile, add `--phase-one-testing` to the Run scheme arguments. Remove it when validating persistence.
+
+## Tests
+
+The unit suite covers catalog decoding, safety filtering, reaction effects, deterministic rotation, recent-item avoidance, calming bias, activity swaps, pet isolation, library filters, local-assistant routing, and safe recommendation output.
+
+```sh
+xcodebuild test \
+  -project Pawprint.xcodeproj \
+  -scheme Pawprint \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
+```
+
+See [`PHASE_1_TESTING.md`](PHASE_1_TESTING.md) for the hands-on product QA path.
+
+## Repository map
+
+```text
+Pawprint/
+├── App/                 app entry point and visual tokens
+├── Models/              SwiftData models and domain logic
+├── Services/            activity library and local Fetch assistant
+├── Views/               onboarding, daily play, memory, and care flows
+├── Resources/           reviewed native activity catalog
+└── Assets.xcassets/     icon, brand, and activity artwork
+
+PawprintTests/           recommendation and behavior tests
+Pawprint.xcodeproj/      native iOS project and shared scheme
+pawprint-prototype.html  dependency-free interactive product prototype
+activities-data.js       expanded 1,000-activity web catalog across 19 species
+```
+
+## Web product prototype
+
+The repository also preserves the dependency-free browser prototype used to explore the broader multi-species concept. It includes a 1,000-activity structured catalog, daily matching, swaps, favorites, reactions, a scrapbook, filters, and local-storage persistence.
 
 ```sh
 python3 -m http.server 4173
 ```
 
-Then visit `http://localhost:4173`.
+Then open `http://localhost:4173`. The root page redirects to `pawprint-prototype.html`.
 
-## Included
+## Product status
 
-- Dog/cat onboarding and pet preferences
-- Rules-based daily activity selection with safety and materials filtering
-- Activity swaps, instructions, safety notes, and favorites
-- Completion reactions that influence later recommendations
-- A persistent scrapbook and filterable activity library
-- Browser persistence through local storage
-- A structured 1,000-activity catalog spanning 19 pet species
-- Deterministic daily matching by species, intensity, attention needs, materials, safety flags, feedback, and recent history
+Pawprint is an actively developed local prototype, not an App Store release. The current native milestone focuses on trustworthy recommendations, a coherent daily loop, and on-device learning. Cloud sync, shared households across devices, production photo storage, notifications, payments, analytics, accessibility audits, and a remotely managed content system remain future work.
 
-## Activity data
+The product reasoning and longer-term direction live in [`pawprint-product-brief.md`](pawprint-product-brief.md).
 
-The imported catalog lives in `activities-data.js`. Every record retains the source list number, species, energy tier, inferred category, materials, instructions, and a safety note so recommendations can be traced back to the supplied list.
+---
 
-This is a local MVP. Accounts, cloud sync, real photo uploads, push notifications, payments, analytics, and a content-management system still require a backend/mobile implementation.
+Built and designed by [Zoya Khan](https://github.com/therealzoyak).

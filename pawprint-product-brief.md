@@ -1,4 +1,4 @@
-# Sniff — Product Brief & Handoff Document
+# Pawprint — Product Brief & Handoff Document
 
 **One tiny enrichment activity a day, for your dog or cat.**
 
@@ -10,7 +10,7 @@
 
 This is a handoff brief, not a spec sheet. It contains the research that led to the idea, the competitive reasoning, the product design, the technical shape, the cost model, and the go-to-market plan. Sections 1–4 are the *why*. Sections 5–9 are the *what*. Sections 10–13 are the *how*. Section 14 lists what we still don't know.
 
-An interactive prototype accompanies this document (`sniff-prototype.html`). Open it in a browser and click through — it's the fastest way to understand the product.
+An interactive prototype accompanies this document (`pawprint-prototype.html`). Open it in a browser and click through — it's the fastest way to understand the product.
 
 Nothing here is built yet. Assumptions that need validating are flagged inline with **[VERIFY]**.
 
@@ -28,7 +28,7 @@ Almost every consumer habit product claims this lineage and then violates it. Th
 
 We found the clearest evidence of this in an adjacent category: **Couch to 5K has a documented dropout rate around 64.5%**, which researchers attribute to injury and aggressive progression — particularly the difficulty jump at week five. A program specifically designed for beginners loses roughly two thirds of them because it isn't actually gentle.
 
-**Sniff applies the kaizen principle honestly.** One activity. Three to ten minutes. Uses things already in the house. No streaks. If you miss three days, nothing breaks.
+**Pawprint applies the kaizen principle honestly.** One activity. Three to ten minutes. Uses things already in the house. No streaks. If you miss three days, nothing breaks.
 
 ---
 
@@ -90,7 +90,7 @@ The gap is not "nobody knows about enrichment." It's "nobody has built the thing
 
 We should be clear-eyed about the risks, because this is a handoff document and not a pitch deck.
 
-**The content is free and abundant.** Everything Sniff would surface exists somewhere online for free. Our value is curation, sequencing, personalization, and the daily prompt — not proprietary knowledge. That's a real but defensible position (it's the same position Headspace occupies relative to free meditation content).
+**The content is free and abundant.** Everything Pawprint would surface exists somewhere online for free. Our value is curation, sequencing, personalization, and the daily prompt — not proprietary knowledge. That's a real but defensible position (it's the same position Headspace occupies relative to free meditation content).
 
 **Pet apps have historically monetized poorly.** Many are free, ad-supported, or brand-subsidized. We are betting that a focused, well-designed product can command a modest subscription, but the price ceiling is lower than in wellness or productivity.
 
@@ -336,7 +336,7 @@ Six categories, following the consensus framing used across veterinary and board
 | Category | What it satisfies | Examples |
 |---|---|---|
 | Foraging / food | Hunting and scavenging instinct | Scatter feeding, snuffle mat, towel burrito, muffin tin puzzle |
-| Sensory | Smell, sight, sound, texture | Sniff walks, scent gardens, bubbles, new textures |
+| Sensory | Smell, sight, sound, texture | Pawprint walks, scent gardens, bubbles, new textures |
 | Cognitive | Problem-solving | Three-cup game, hide and seek, name-that-toy, trick learning |
 | Physical | Fitness and coordination | Flirt pole, tug, obstacle courses, wand play |
 | Social | Interaction with people or animals | Structured play, cooperative games, focused attention time |
@@ -404,7 +404,7 @@ Say it out loud in the interface. On the memory screen: *"No streaks. Off days a
 
 ### Visual identity
 
-The prototype (`sniff-prototype.html`) implements a direction: sage-toned paper, deep forest ink, a fresh grass-green accent, and a warm ochre for the "why this works" notes. Display typography is warm and slightly wonky (Fraunces); UI type is clean and friendly.
+The prototype (`pawprint-prototype.html`) implements a direction: sage-toned paper, deep forest ink, a fresh grass-green accent, and a warm ochre for the "why this works" notes. Display typography is warm and slightly wonky (Fraunces); UI type is clean and friendly.
 
 The intent is domestic and tactile — towels, cardboard, grass — rather than clinical wellness-app minimalism or bright cartoon pet-brand energy.
 
