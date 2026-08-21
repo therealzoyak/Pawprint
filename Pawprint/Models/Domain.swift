@@ -439,6 +439,25 @@ private extension String {
     }
 }
 
+struct AccountSession: Equatable {
+    let accountID: UUID
+    let displayName: String?
+
+    var isLocalOnly: Bool { true }
+}
+
+protocol AccountSessionProviding {
+    func session(for account: LocalAccount?) -> AccountSession?
+}
+
+struct LocalAccountSessionProvider: AccountSessionProviding {
+    func session(for account: LocalAccount?) -> AccountSession? {
+        guard let account else { return nil }
+        let name = account.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return AccountSession(accountID: account.id, displayName: name.isEmpty ? nil : name)
+    }
+}
+
 enum PetRelationshipKind: String, Codable, CaseIterable, Identifiable {
     case bonded = "Bonded pair"
     case friendly = "Friendly together"
