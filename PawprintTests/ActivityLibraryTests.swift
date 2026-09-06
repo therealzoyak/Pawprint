@@ -4,6 +4,22 @@ import SwiftData
 
 @MainActor
 final class ActivityLibraryTests: XCTestCase {
+    func testLocalAccountSessionProviderKeepsAccountLocalOnly() {
+        let account = LocalAccount(name: "  Zoya  ")
+        let session = LocalAccountSessionProvider().session(for: account)
+
+        XCTAssertEqual(session?.accountID, account.id)
+        XCTAssertEqual(session?.displayName, "Zoya")
+        XCTAssertEqual(session?.isLocalOnly, true)
+    }
+
+    func testLocalAccountSessionProviderHandlesMissingOrUnnamedAccount() {
+        let provider = LocalAccountSessionProvider()
+
+        XCTAssertNil(provider.session(for: nil))
+        XCTAssertNil(provider.session(for: LocalAccount(name: "   "))?.displayName)
+    }
+
     func testPetRelationshipsOnlyAllowSharedPlayForConfirmedSocialPairs() {
         let first = UUID(), second = UUID()
         let bonded = PetRelationship(firstPetID: first, secondPetID: second, kind: .bonded)
